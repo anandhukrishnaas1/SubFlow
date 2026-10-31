@@ -1,106 +1,71 @@
 'use client';
 
 import React from 'react';
-import { Maximize2, Sparkles } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { AlertCircle, BarChart3 } from 'lucide-react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { useCurrency } from '@/hooks/use-currency';
+import { api } from '@/lib/api';
 
 export function RevenueByPlanCard() {
   const { formatAmount } = useCurrency();
-
-  // Generate realistic barcode stripes matching the template
-  const starterBars = [85, 92, 88, 95, 90, 86, 94, 98, 91, 87, 93, 89, 96, 92];
-  const proBars = [65, 58, 62, 59, 64, 60, 63, 61, 57, 65, 62, 59, 64, 60, 58, 63];
-  const enterpriseBars = [38, 42, 35, 40, 37, 41, 36, 39, 43, 35, 38, 40, 36];
+  const trendsQuery = useQuery({
+    queryKey: ['billing-trends'],
+    queryFn: () => api.getBillingTrends(),
+  });
+  const trends = trendsQuery.data;
+  const hasActivity = Array.isArray(trends) && trends.some(
+    (item: any) => Number(item.billed) > 0 || Number(item.collected) > 0,
+  );
 
   return (
-    <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.05)] transition-all flex flex-col justify-between">
-      <div>
-        {/* Header row */}
-        <div className="flex items-start justify-between">
-          <div>
-            <span className="text-xs font-bold text-stone-500">Revenue by Plan</span>
-            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-              <span className="text-3xl sm:text-4xl font-black text-stone-900 tracking-tight">
-                {formatAmount(42860)}
-              </span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
-                -3.2% vs last month
-              </span>
-            </div>
-          </div>
+    <section className="bg-white rounded-3xl p-6 sm:p-7 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)]">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <span className="text-xs font-bold text-stone-500">Billing Trends</span>
+          <p className="text-sm font-semibold text-stone-800 mt-1">
+            Invoiced and collected amounts by month
+          </p>
+        </div>
+        <BarChart3 className="h-5 w-5 text-stone-400" />
+      </div>
 
-          <button
-            onClick={() => alert('Expanded analytical view')}
-            className="h-8 w-8 rounded-full bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-stone-400 hover:text-stone-700 transition-colors"
-            title="Expand view"
-          >
-            <Maximize2 className="h-4 w-4" />
+      {trendsQuery.isLoading ? (
+        <p className="py-12 text-center text-sm text-stone-500" role="status">Loading billing trends…</p>
+      ) : trendsQuery.isError ? (
+        <div className="py-8 text-center">
+          <AlertCircle className="h-5 w-5 mx-auto text-rose-600" />
+          <p className="mt-2 text-sm text-rose-700" role="alert">Billing trends could not be loaded.</p>
+          <button type="button" className="mt-2 text-xs font-semibold underline" onClick={() => trendsQuery.refetch()}>
+            Retry
           </button>
         </div>
-
-        {/* Income Source subtitle */}
-        <div className="mt-6 mb-3 flex items-center justify-between">
-          <span className="text-[11px] font-extrabold text-stone-400 uppercase tracking-wider">
-            Income Source
-          </span>
-          <span className="text-[11px] font-semibold text-stone-400 flex items-center gap-1">
-            <Sparkles className="h-3 w-3 text-orange-500" />
-            Live Stripe & Razorpay stream
-          </span>
+      ) : !Array.isArray(trends) || trends.length === 0 || !hasActivity ? (
+        <p className="py-12 text-center text-sm text-stone-500">
+          No billing activity is available for the selected period.
+        </p>
+      ) : (
+        <div className="h-64 mt-4" aria-label="Monthly billed and collected revenue chart">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={trends}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="month" />
+              <YAxis tickFormatter={(value) => formatAmount(value)} />
+              <Tooltip formatter={(value) => formatAmount(Number(value))} />
+              <Bar dataKey="billed" name="Invoiced" fill="#f97316" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="collected" name="Collected" fill="#10b981" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
-
-        {/* Barcode Striped Histogram Chart matching the template */}
-        <div className="h-32 flex items-end justify-between gap-1 pt-4 pb-2 border-b border-stone-100 overflow-hidden">
-          {/* Starter Bars (Orange) */}
-          {starterBars.map((h, i) => (
-            <div
-              key={`starter-${i}`}
-              className="flex-1 max-w-[6px] rounded-full bg-gradient-to-t from-orange-600 to-orange-500 hover:opacity-80 transition-all cursor-pointer"
-              style={{ height: `${h}%` }}
-              title={`Starter: ${formatAmount(h * 135)}`}
-            />
-          ))}
-
-          {/* Pro Bars (Amber / Golden Yellow) */}
-          {proBars.map((h, i) => (
-            <div
-              key={`pro-${i}`}
-              className="flex-1 max-w-[6px] rounded-full bg-gradient-to-t from-amber-500 to-amber-400 hover:opacity-80 transition-all cursor-pointer"
-              style={{ height: `${h}%` }}
-              title={`Pro: ${formatAmount(h * 290)}`}
-            />
-          ))}
-
-          {/* Enterprise Bars (Light Slate / Soft Gray) */}
-          {enterpriseBars.map((h, i) => (
-            <div
-              key={`ent-${i}`}
-              className="flex-1 max-w-[6px] rounded-full bg-gradient-to-t from-stone-300 to-stone-200 hover:opacity-80 transition-all cursor-pointer"
-              style={{ height: `${h}%` }}
-              title={`Enterprise: ${formatAmount(h * 270)}`}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Legend below matching template */}
-      <div className="flex items-center gap-6 pt-4 text-xs font-semibold flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
-          <span className="text-stone-900 font-bold">Starter</span>
-          <span className="text-stone-500 font-medium">{formatAmount(12400)}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-          <span className="text-stone-900 font-bold">Pro</span>
-          <span className="text-stone-500 font-medium">{formatAmount(18900)}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-stone-300" />
-          <span className="text-stone-900 font-bold">Enterprise</span>
-          <span className="text-stone-500 font-medium">{formatAmount(11560)}</span>
-        </div>
-      </div>
-    </div>
+      )}
+    </section>
   );
 }

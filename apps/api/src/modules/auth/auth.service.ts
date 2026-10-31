@@ -45,7 +45,13 @@ export class AuthService {
     zipCode?: string;
   }): Promise<any> {
     const role = dto.role || UserRole.CUSTOMER;
-    const password = dto.password || 'SubFlow@2026!';
+    if (!Object.values(UserRole).includes(role as UserRole)) {
+      throw new BadRequestException('Unsupported user role.');
+    }
+    if (!dto.password) {
+      throw new BadRequestException('A password is required.');
+    }
+    const password = dto.password;
 
     try {
       // 1. Create in Firebase Auth

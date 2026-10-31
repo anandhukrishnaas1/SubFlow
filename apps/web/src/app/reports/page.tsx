@@ -1,12 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
-import { BarChart3, TrendingUp, DollarSign, Users, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { AiAssistantDrawer } from '@/components/dashboard/ai-assistant-drawer';
+import { BarChart3 } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -19,94 +20,192 @@ import {
 } from 'recharts';
 
 export default function ReportsPage() {
-  const { data: kpis = {} } = useQuery({
-    queryKey: ['kpis'],
-    queryFn: () => api.getKpis(),
+  const [aiAssistantOpen, setAiAssistantOpen] = useState(false);
+  const summaryQuery = useQuery({
+    queryKey: ['financialSummary'],
+    queryFn: () => api.getFinancialSummary(),
   });
-
-  const { data: trends = [] } = useQuery({
-    queryKey: ['revenueTrends'],
-    queryFn: () => api.getRevenueTrends(),
+  const trendsQuery = useQuery({
+    queryKey: ['billingTrends'],
+    queryFn: async () => {
+      const trends = await api.getBillingTrends();
+      if (!Array.isArray(trends)) {
+        throw new Error('The billing trends API returned an invalid response.');
+      }
+      return trends;
+    },
   });
+  const metricsQuery = useQuery({
+    queryKey: ['subscriptionMetrics'],
+    queryFn: () => api.getSubscriptionMetrics(),
+  });
+  const summary = summaryQuery.data;
+  const trends = trendsQuery.data || [];
+  const currency = summary?.currency || 'USD';
+  const reportsFailed =
+    summaryQuery.isError ||
+    summaryQuery.isRefetchError ||
+    trendsQuery.isError ||
+    trendsQuery.isRefetchError ||
+    metricsQuery.isError ||
+    metricsQuery.isRefetchError;
+  const hasBillingActivity = trends.some(
+    (trend: any) => Number(trend.billed) > 0 || Number(trend.collected) > 0,
+  );
 
-  const comparisonData = trends.length > 0 ? trends : [
-    { month: 'Jun', billed: 500, collected: 480 },
-    { month: 'Jul', billed: 750, collected: 710 },
-    { month: 'Aug', billed: 1050, collected: 990 },
-    { month: 'Sep', billed: 1250, collected: 1200 },
-    { month: 'Oct', billed: 1550, collected: 1490 },
-    { month: 'Nov', billed: 180, collected: Number(kpis.totalRevenue) || 93.6 },
-  ];
+  const displayMetric = (
+    query: typeof summaryQuery | typeof metricsQuery,
+    value: number | null | undefined,
+    asCurrency = false,
+  ) => {
+    if (query.isLoading) return 'Loading…';
+    if (query.isError || query.isRefetchError) return 'Unavailable';
+    if (value === null || value === undefined) return 'Insufficient history';
+    return asCurrency ? formatCurrency(value, currency) : `${value.toFixed(2)}%`;
+  };
 
   return (
     <div className="flex min-h-screen bg-[#edeae3] text-stone-900 selection:bg-orange-600 selection:text-white">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
-        <Header />
-
+        <Header onOpenAiAssistant={() => setAiAssistantOpen(true)} />
         <main className="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full pb-20 md:pb-8">
-          {/* Header */}
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2.5">
               <BarChart3 className="h-6 w-6 text-orange-600" />
               Financial Reports & Billing Analytics
             </h1>
             <p className="text-sm text-slate-500 mt-1">
-              Deep-dive metrics across recurring cash velocity, invoice collections, and customer retention.
+              Invoiced revenue, collected cash, and recurring revenue are calculated separately from source records.
             </p>
           </div>
 
-          {/* Metric Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            <div className="ui-card p-5">
-              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Net Collection Rate</span>
-              <p className="text-3xl font-extrabold text-emerald-600 mt-1 font-mono">98.4%</p>
-              <p className="text-[11px] text-slate-500 mt-1 font-medium">Payments collected vs invoices billed</p>
+          {reportsFailed && (
+            <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+              <span>Some report data could not be loaded.</span>
+              <button
+                type="button"
+                className="font-semibold underline"
+                onClick={() =>
+                  Promise.all([
+                    summaryQuery.refetch(),
+                    trendsQuery.refetch(),
+                    metricsQuery.refetch(),
+                  ])
+                }
+              >
+                Retry
+              </button>
             </div>
-
-            <div className="ui-card p-5">
-              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Average Revenue Per User (ARPU)</span>
-              <p className="text-3xl font-extrabold text-slate-900 mt-1 font-mono">
-                {formatCurrency(kpis.mrr ? kpis.mrr / (kpis.totalCustomers || 1) : 40.41)}
+          )}
+          {summary?.dataAvailability?.sourceMode === 'mock' &&
+            !summary.dataAvailability.syntheticDataIncluded && (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                Development mock data is active. Synthetic sample records are excluded from analytics.
               </p>
-              <p className="text-[11px] text-slate-500 mt-1 font-medium">Per active account each month</p>
-            </div>
+            )}
 
-            <div className="ui-card p-5">
-              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Customer Churn Rate</span>
-              <p className="text-3xl font-extrabold text-orange-600 mt-1 font-mono">0.0%</p>
-              <p className="text-[11px] text-slate-500 mt-1 font-medium">Zero churn across active subscriptions</p>
-            </div>
-          </div>
+          <section aria-label="Financial metrics" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <MetricCard
+              label="Net collection rate"
+              value={displayMetric(summaryQuery, summary?.netCollectionRate)}
+              detail="Invoice paid amounts ÷ eligible invoice totals"
+            />
+            <MetricCard
+              label="Average revenue per customer"
+              value={displayMetric(summaryQuery, summary?.arpu, true)}
+              detail="Current MRR ÷ current customer count"
+            />
+            <MetricCard
+              label="Customer churn rate"
+              value={displayMetric(metricsQuery, metricsQuery.data?.churnRate)}
+              detail="Trailing 30 days; dated lifecycle records required"
+            />
+            <MetricCard
+              label="Collected cash"
+              value={displayMetric(summaryQuery, summary?.totalCollected, true)}
+              detail="Successful recorded payments; not invoice value"
+            />
+            <MetricCard
+              label="Outstanding receivables"
+              value={displayMetric(summaryQuery, summary?.outstandingPayments, true)}
+              detail="Current eligible invoice balances"
+            />
+            <MetricCard
+              label="Net revenue retention"
+              value="Unavailable"
+              detail="Historical revenue snapshots are not stored"
+            />
+          </section>
 
-          {/* Billed vs Collected Bar Chart */}
-          <div className="ui-card p-6">
-            <h3 className="text-base font-bold text-slate-900 mb-1">Billing vs Realized Collection</h3>
-            <p className="text-xs text-slate-500 mb-6 font-medium">Comparison of total invoice receivables against settled payments</p>
-
+          <section className="ui-card p-6">
+            <h2 className="text-base font-bold text-slate-900 mb-1">Billing vs collected cash</h2>
+            <p className="text-xs text-slate-500 mb-6 font-medium">
+              Monthly invoice totals and successful payments from available Firestore records
+            </p>
             <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={comparisonData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis dataKey="month" stroke="#64748b" fontSize={11} />
-                  <YAxis stroke="#64748b" fontSize={11} tickFormatter={(v) => `$${v}`} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#0f172a',
-                      borderColor: '#334155',
-                      borderRadius: '0.75rem',
-                      fontSize: '12px',
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                  <Bar dataKey="billed" fill="#ea580c" name="Invoiced Amount" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="collected" fill="#10b981" name="Settled Payments" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {trendsQuery.isLoading ? (
+                <p role="status" className="pt-24 text-center text-sm text-slate-500">Loading billing records…</p>
+              ) : trendsQuery.isError || trendsQuery.isRefetchError ? (
+                <div role="alert" className="pt-20 text-center text-sm text-rose-700">
+                  <p>Billing activity could not be loaded.</p>
+                  <button type="button" className="mt-2 font-semibold underline" onClick={() => trendsQuery.refetch()}>
+                    Retry
+                  </button>
+                </div>
+              ) : trends.length === 0 || !hasBillingActivity ? (
+                <p className="pt-24 text-center text-sm text-slate-500">No billing activity in the available period.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={trends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="month" stroke="#64748b" fontSize={11} />
+                    <YAxis
+                      stroke="#64748b"
+                      fontSize={11}
+                      tickFormatter={(value) => formatCurrency(value, currency)}
+                    />
+                    <Tooltip
+                      formatter={(value) => formatCurrency(Number(value), currency)}
+                      contentStyle={{
+                        backgroundColor: '#0f172a',
+                        borderColor: '#334155',
+                        borderRadius: '0.75rem',
+                        fontSize: '12px',
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                    <Bar dataKey="billed" fill="#ea580c" name="Invoiced amount" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="collected" fill="#10b981" name="Collected payments" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
-          </div>
+          </section>
         </main>
       </div>
+      <AiAssistantDrawer
+        isOpen={aiAssistantOpen}
+        onClose={() => setAiAssistantOpen(false)}
+      />
+    </div>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <div className="ui-card p-5">
+      <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">{label}</span>
+      <p className="text-2xl font-extrabold text-slate-900 mt-1 font-mono">{value}</p>
+      <p className="text-[11px] text-slate-500 mt-1 font-medium">{detail}</p>
     </div>
   );
 }

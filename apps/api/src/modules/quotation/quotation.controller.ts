@@ -7,6 +7,7 @@ import {
   Param,
   Query,
   UseGuards,
+  NotFoundException,
 } from '@nestjs/common';
 import { QuotationService } from './quotation.service';
 import { FirebaseAuthGuard } from '../../common/guards/firebase-auth.guard';
@@ -33,8 +34,13 @@ export class QuotationController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.quotationService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const quotation = await this.quotationService.findOne(id);
+    this.assertOwner(quotation, user);
+    return quotation;
   }
 
   @Post()
@@ -50,12 +56,30 @@ export class QuotationController {
   }
 
   @Patch(':id/accept')
-  async accept(@Param('id') id: string) {
+  async accept(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    this.assertOwner(await this.quotationService.findOne(id), user);
     return this.quotationService.accept(id);
   }
 
   @Patch(':id/reject')
-  async reject(@Param('id') id: string, @Body('reason') reason?: string) {
+  async reject(
+    @Param('id') id: string,
+    @Body('reason') reason: string | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    this.assertOwner(await this.quotationService.findOne(id), user);
     return this.quotationService.reject(id, reason);
+  }
+
+  private assertOwner(
+    resource: { customerId?: string },
+    user: AuthenticatedUser,
+  ): void {
+    if (user.role === UserRole.CUSTOMER && resource.customerId !== user.uid) {
+      throw new NotFoundException('Quotation not found');
+    }
   }
 }

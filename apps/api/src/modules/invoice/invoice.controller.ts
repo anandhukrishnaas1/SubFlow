@@ -8,6 +8,7 @@ import {
   Query,
   Res,
   UseGuards,
+  NotFoundException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { InvoiceService } from './invoice.service';
@@ -40,13 +41,23 @@ export class InvoiceController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.invoiceService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const invoice = await this.invoiceService.findOne(id);
+    this.assertOwner(invoice, user);
+    return invoice;
   }
 
   @Get(':id/pdf')
-  async downloadPdf(@Param('id') id: string, @Res() res: Response) {
+  async downloadPdf(
+    @Param('id') id: string,
+    @Res() res: Response,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     const invoice = await this.invoiceService.findOne(id);
+    this.assertOwner(invoice, user);
     const pdfBuffer = await this.pdfService.generateInvoicePdf(invoice, invoice.items);
 
     res.set({
@@ -80,5 +91,14 @@ export class InvoiceController {
   @Roles(UserRole.ADMIN)
   async cancel(@Param('id') id: string) {
     return this.invoiceService.cancel(id);
+  }
+
+  private assertOwner(
+    resource: { customerId?: string },
+    user: AuthenticatedUser,
+  ): void {
+    if (user.role === UserRole.CUSTOMER && resource.customerId !== user.uid) {
+      throw new NotFoundException('Invoice not found');
+    }
   }
 }

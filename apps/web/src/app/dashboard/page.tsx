@@ -32,11 +32,18 @@ export default function DashboardPage() {
   const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  const { data: kpis = {} } = useQuery({
+  const kpisQuery = useQuery({
     queryKey: ['kpis'],
     queryFn: () => api.getKpis(),
     refetchInterval: 5000,
   });
+  const kpis = kpisQuery.data || {};
+  const metricValue = (value: number | null | undefined, currency = false) => {
+    if (kpisQuery.isLoading) return 'Loading…';
+    if (kpisQuery.isError) return 'Unavailable';
+    if (value === null || value === undefined) return 'Insufficient history';
+    return currency ? formatAmount(value) : value.toLocaleString();
+  };
 
   const handleShare = () => {
     if (typeof window !== 'undefined' && navigator.clipboard) {
@@ -62,6 +69,20 @@ export default function DashboardPage() {
         />
 
         <main className="p-4 sm:p-8 space-y-7 max-w-7xl mx-auto w-full pb-24 lg:pb-10">
+          {(kpisQuery.isError || kpisQuery.isRefetchError) && (
+            <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+              <span>Dashboard analytics could not be loaded.</span>
+              <button type="button" className="font-semibold underline" onClick={() => kpisQuery.refetch()}>
+                Retry
+              </button>
+            </div>
+          )}
+          {kpis.dataAvailability?.sourceMode === 'mock' &&
+            !kpis.dataAvailability.syntheticDataIncluded && (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                Development mock data is active. Synthetic sample records are excluded from analytics.
+              </p>
+            )}
           {/* Dashboard Title & Quick Actions Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -111,7 +132,7 @@ export default function DashboardPage() {
             {/* Card 1: Total Revenue */}
             <div className="bg-white rounded-3xl p-6 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.06)] transition-all flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-stone-500">Total Revenue</span>
+                <span className="text-xs font-bold text-stone-500">Collected Revenue</span>
                 <div className="h-9 w-9 rounded-full bg-stone-50 border border-stone-100 flex items-center justify-center text-stone-700 shadow-2xs">
                   <ShoppingCart className="h-4 w-4" />
                 </div>
@@ -119,14 +140,11 @@ export default function DashboardPage() {
               <div className="mt-3">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="text-3xl font-black text-stone-900 tracking-tight font-mono">
-                    {formatAmount(3500)}
-                  </span>
-                  <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    +4.8%
+                    {metricValue(kpis.totalCollected ?? kpis.totalRevenue, true)}
                   </span>
                 </div>
                 <p className="text-[11px] text-stone-400 mt-2 font-medium">
-                  +{formatAmount(150)} this week
+                  Recorded successful payments; not invoice totals
                 </p>
               </div>
             </div>
@@ -134,7 +152,7 @@ export default function DashboardPage() {
             {/* Card 2: New Subscriptions */}
             <div className="bg-white rounded-3xl p-6 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.06)] transition-all flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-stone-500">New Subscriptions</span>
+                <span className="text-xs font-bold text-stone-500">Monthly Recurring Revenue</span>
                 <div className="h-9 w-9 rounded-full bg-stone-50 border border-stone-100 flex items-center justify-center text-stone-700 shadow-2xs">
                   <Layers className="h-4 w-4" />
                 </div>
@@ -142,13 +160,12 @@ export default function DashboardPage() {
               <div className="mt-3">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="text-3xl font-black text-stone-900 tracking-tight font-mono">
-                    350
-                  </span>
-                  <span className="text-[11px] font-extrabold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
-                    -4.6%
+                    {metricValue(kpis.mrr, true)}
                   </span>
                 </div>
-                <p className="text-[11px] text-stone-400 mt-2 font-medium">+12 today</p>
+                <p className="text-[11px] text-stone-400 mt-2 font-medium">
+                  ARR: {metricValue(kpis.arr, true)} (MRR × 12)
+                </p>
               </div>
             </div>
 
@@ -163,20 +180,19 @@ export default function DashboardPage() {
               <div className="mt-3">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="text-3xl font-black text-stone-900 tracking-tight font-mono">
-                    4.6%
-                  </span>
-                  <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    -0.8%
+                    {kpis.customerChurnRate == null
+                      ? metricValue(kpis.customerChurnRate)
+                      : `${metricValue(kpis.customerChurnRate)}%`}
                   </span>
                 </div>
-                <p className="text-[11px] text-stone-400 mt-2 font-medium">On track to optimal churn</p>
+                <p className="text-[11px] text-stone-400 mt-2 font-medium">Trailing 30 days; requires dated lifecycle records</p>
               </div>
             </div>
 
             {/* Card 4: Active Users */}
             <div className="bg-white rounded-3xl p-6 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.06)] transition-all flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-stone-500">Active Users</span>
+                <span className="text-xs font-bold text-stone-500">Customers</span>
                 <div className="h-9 w-9 rounded-full bg-stone-50 border border-stone-100 flex items-center justify-center text-stone-700 shadow-2xs">
                   <UserCheck className="h-4 w-4" />
                 </div>
@@ -184,13 +200,12 @@ export default function DashboardPage() {
               <div className="mt-3">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="text-3xl font-black text-stone-900 tracking-tight font-mono">
-                    3,500
-                  </span>
-                  <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    +4.8%
+                    {metricValue(kpis.totalCustomers)}
                   </span>
                 </div>
-                <p className="text-[11px] text-stone-400 mt-2 font-medium">+120 this week</p>
+                <p className="text-[11px] text-stone-400 mt-2 font-medium">
+                  {metricValue(kpis.activeSubscriptions)} active subscriptions
+                </p>
               </div>
             </div>
           </div>

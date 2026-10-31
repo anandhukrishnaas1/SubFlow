@@ -242,17 +242,18 @@ let demoStore: any = {
 };
 
 async function fetchFromApi(endpoint: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('subflow_token') || 'demo-admin-token' : 'demo-admin-token';
-  const role = typeof window !== 'undefined' ? localStorage.getItem('subflow_role') || 'admin' : 'admin';
-  const uid = typeof window !== 'undefined' ? localStorage.getItem('subflow_uid') || 'demo-admin-uid' : 'demo-admin-uid';
-
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-    'x-mock-role': role,
-    'x-mock-uid': uid,
-    ...(options.headers || {}),
-  };
+  const headers = new Headers(options.headers);
+  headers.set('Content-Type', 'application/json');
+  const isBrowser = typeof window !== 'undefined';
+  const token = isBrowser ? localStorage.getItem('subflow_token') : null;
+  const mockEnabled =
+    process.env.NODE_ENV === 'development' &&
+    process.env.NEXT_PUBLIC_ENABLE_MOCK_AUTH === 'true';
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  if (mockEnabled && isBrowser) {
+    headers.set('x-mock-role', localStorage.getItem('subflow_role') || 'admin');
+    headers.set('x-mock-uid', localStorage.getItem('subflow_uid') || 'demo-admin-uid');
+  }
 
   try {
     const res = await fetch(`${API_URL}${endpoint}`, {
@@ -264,9 +265,15 @@ async function fetchFromApi(endpoint: string, options: RequestInit = {}) {
     }
     return await res.json();
   } catch (err) {
-    // Graceful fallback to demoStore if backend server is not running
-    console.info(`[SubFlow Client] Backend not reachable on ${endpoint}, serving from client cache:`, err);
-    return handleFallback(endpoint, options);
+    if (
+      err instanceof TypeError &&
+      process.env.NODE_ENV === 'development' &&
+      process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+    ) {
+      console.info(`[SubFlow Client] Using explicitly enabled demo data for ${endpoint}.`, err);
+      return handleFallback(endpoint, options);
+    }
+    throw err;
   }
 }
 
@@ -622,7 +629,23 @@ function handleFallback(endpoint: string, options: RequestInit = {}): any {
 export const api = {
   getKpis: () => fetchFromApi('/analytics/kpis'),
   getRevenueTrends: () => fetchFromApi('/analytics/revenue-trends'),
+  getBillingTrends: (from?: string, to?: string) => {
+    const query = new URLSearchParams();
+    if (from) query.set('from', from);
+    if (to) query.set('to', to);
+    const queryString = query.toString();
+    const suffix = queryString ? `?${queryString}` : '';
+    return fetchFromApi(`/analytics/billing-trends${suffix}`);
+  },
   getSubscriptionBreakdown: () => fetchFromApi('/analytics/subscription-breakdown'),
+  getFinancialSummary: () => fetchFromApi('/analytics/financial-summary'),
+  getSubscriptionMetrics: () => fetchFromApi('/analytics/subscription-metrics'),
+  getAnalyticsRisks: () => fetchFromApi('/analytics/risks'),
+  askAnalytics: (question: string) =>
+    fetchFromApi('/analytics/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question }),
+    }),
 
   // Products
   getProducts: (status?: string) => fetchFromApi(`/products${status ? `?status=${status}` : ''}`),

@@ -28,8 +28,8 @@ export default function LoginPage() {
 
   const [mode, setMode] = useState<'signin' | 'register'>('signin');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('admin@subflow.io');
-  const [password, setPassword] = useState('admin_pass_2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'staff' | 'customer'>('admin');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -42,7 +42,10 @@ export default function LoginPage() {
   const handleRolePreset = (preset: 'admin' | 'staff' | 'customer') => {
     setRole(preset);
     setError(null);
-    loginWithDemo(preset);
+    if (!loginWithDemo(preset)) {
+      setError('Demo sign-in is only available when explicitly enabled in development.');
+      return;
+    }
     if (preset === 'customer') {
       router.push('/portal');
     } else {
@@ -236,66 +239,51 @@ export default function LoginPage() {
               </span>
             </h2>
             <p className="text-sm text-stone-600 font-medium leading-relaxed max-w-lg">
-              Manage recurring cycles, smart payment retry cascades, and real-time revenue telemetry from a single porcelain dashboard.
+              Manage recurring billing, reconcile payments, and review analytics calculated from your billing records.
             </p>
           </div>
 
-          {/* Floating Glassmorphic Telemetry Cards */}
+          {/* Product preview cards */}
           <div className="grid grid-cols-2 gap-4 max-w-lg">
-            {/* Card 1: Live MRR Pulse */}
             <div className="p-5 rounded-3xl bg-white/90 backdrop-blur-md border border-stone-200/80 shadow-[0_8px_30px_-5px_rgba(0,0,0,0.04)] space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-stone-500">Live MRR Stream</span>
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[11px] font-bold text-stone-500">Analytics</span>
+                <span className="h-2 w-2 rounded-full bg-stone-300" />
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black text-stone-900 font-mono">$42,860</span>
-                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  +18.4%
-                </span>
-              </div>
-              {/* Vector Barcode Histogram */}
-              <div className="h-8 flex items-end gap-1 pt-1">
-                {[60, 45, 75, 90, 65, 80, 95, 70, 85, 100].map((h, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 rounded-full bg-gradient-to-t from-orange-600 to-amber-400"
-                    style={{ height: `${h}%` }}
-                  />
-                ))}
+              <div>
+                <p className="text-lg font-black text-stone-900">Source-backed</p>
+                <p className="text-[11px] text-stone-500 mt-1">
+                  Metrics use available invoice, payment, and subscription records.
+                </p>
               </div>
             </div>
 
-            {/* Card 2: Goal Speedometer Preview */}
             <div className="p-5 rounded-3xl bg-gradient-to-br from-orange-600 to-amber-600 text-white shadow-[0_12px_36px_-6px_rgba(234,88,12,0.35)] flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-orange-100">Monthly Target</span>
+                <span className="text-[11px] font-bold text-orange-100">Revenue goal</span>
                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-white/20 text-white">
-                  On Pace
+                  Optional
                 </span>
               </div>
               <div className="py-1">
-                <span className="text-3xl font-black tracking-tight">85%</span>
+                <span className="text-xl font-black tracking-tight">Not configured</span>
                 <p className="text-[11px] text-orange-100 font-medium mt-0.5">
-                  $85,000 of $100k target
+                  No target is set for this workspace.
                 </p>
-              </div>
-              <div className="w-full bg-black/20 h-1.5 rounded-full overflow-hidden flex">
-                <div className="bg-white h-full rounded-full" style={{ width: '85%' }} />
               </div>
             </div>
           </div>
 
-          {/* Trust badges */}
+          {/* Product capability labels */}
           <div className="flex items-center gap-6 pt-2 text-xs font-semibold text-stone-500">
             <span className="flex items-center gap-1.5">
-              <ShieldCheck className="h-4 w-4 text-emerald-600" /> SOC2 Type II Certified
+              <ShieldCheck className="h-4 w-4 text-emerald-600" /> Protected API routes
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 text-orange-600" /> 99.99% Cloud SLA
+              <CheckCircle2 className="h-4 w-4 text-orange-600" /> Payment reconciliation
             </span>
             <span className="flex items-center gap-1.5">
-              <Globe className="h-4 w-4 text-stone-600" /> Global Currency Ready
+              <Globe className="h-4 w-4 text-stone-600" /> Multiple billing intervals
             </span>
           </div>
         </div>
@@ -359,28 +347,30 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* 1-Click Role Presets for Instant Demo Evaluation */}
-              <div className="p-3 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-bold text-stone-600">
-                  <span className="flex items-center gap-1">
-                    <Zap className="h-3 w-3 text-orange-500" /> Quick Demo Role Login:
-                  </span>
-                  <span className="text-stone-400 font-normal">Click to launch</span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(['admin', 'staff', 'customer'] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => handleRolePreset(r)}
-                      className="text-[11px] font-bold py-1.5 px-2 rounded-xl capitalize transition-all border bg-white text-stone-700 hover:text-white hover:bg-stone-900 border-stone-200 shadow-2xs active:scale-95"
-                    >
-                      {r === 'admin' ? 'Super Admin' : r === 'staff' ? 'Billing Ops' : 'Subscriber'}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* Development-only role presets for local mock authentication */}
+              {process.env.NODE_ENV === 'development' &&
+                process.env.NEXT_PUBLIC_ENABLE_MOCK_AUTH === 'true' && (
+                  <div className="p-3 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-stone-600">
+                      <span className="flex items-center gap-1">
+                        <Zap className="h-3 w-3 text-orange-500" /> Quick Demo Role Login:
+                      </span>
+                      <span className="text-stone-400 font-normal">Click to launch</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(['admin', 'staff', 'customer'] as const).map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => handleRolePreset(r)}
+                          className="text-[11px] font-bold py-1.5 px-2 rounded-xl capitalize transition-all border bg-white text-stone-700 hover:text-white hover:bg-stone-900 border-stone-200 shadow-2xs active:scale-95"
+                        >
+                          {r === 'admin' ? 'Super Admin' : r === 'staff' ? 'Billing Ops' : 'Subscriber'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
               {/* Login / Register Form */}
               <form onSubmit={handleSubmit} className="space-y-3.5">

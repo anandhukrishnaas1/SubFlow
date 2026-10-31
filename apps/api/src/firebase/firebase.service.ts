@@ -80,10 +80,19 @@ export class FirebaseService implements OnModuleInit {
       return;
     }
 
-    // High performance in-memory mock engine with full Firestore API interface
-    this.isMock = true;
-    this.db = new MockFirestore();
-    this.logger.log(`Initialized SubFlow In-Memory Firestore Engine (Dev Mode) with pre-seeded domain records`);
+    if (
+      process.env.NODE_ENV === 'development' &&
+      process.env.SUBFLOW_MOCK_FIRESTORE === 'true'
+    ) {
+      this.isMock = true;
+      this.db = new MockFirestore();
+      this.logger.warn('Initialized explicitly enabled in-memory Firestore mock.');
+      return;
+    }
+
+    throw new Error(
+      'Firebase is not configured. Configure FIREBASE_SERVICE_ACCOUNT_KEY or FIRESTORE_EMULATOR_HOST; the mock requires SUBFLOW_MOCK_FIRESTORE=true in development.',
+    );
   }
 
   getAuth(): admin.auth.Auth {
@@ -96,5 +105,9 @@ export class FirebaseService implements OnModuleInit {
 
   getStorage(): admin.storage.Storage {
     return this.storage;
+  }
+
+  get isMockFirestore(): boolean {
+    return this.isMock;
   }
 }

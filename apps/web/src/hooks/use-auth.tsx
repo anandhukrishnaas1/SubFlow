@@ -31,7 +31,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string, role?: string) => Promise<UserProfile>;
   loginWithGoogle: () => Promise<UserProfile>;
   loginWithApple: () => Promise<UserProfile>;
-  loginWithDemo: (role: 'admin' | 'staff' | 'customer') => void;
+  loginWithDemo: (role: 'admin' | 'staff' | 'customer') => boolean;
   logout: () => Promise<void>;
   switchRole: (role: 'admin' | 'staff' | 'customer') => void;
 }
@@ -43,7 +43,7 @@ const AuthContext = createContext<AuthContextType>({
   register: async () => ({ uid: '', email: '', displayName: '', role: 'admin' }),
   loginWithGoogle: async () => ({ uid: '', email: '', displayName: '', role: 'admin' }),
   loginWithApple: async () => ({ uid: '', email: '', displayName: '', role: 'admin' }),
-  loginWithDemo: () => {},
+  loginWithDemo: () => false,
   logout: async () => {},
   switchRole: () => {},
 });
@@ -71,6 +71,10 @@ const DEMO_USERS: Record<string, UserProfile> = {
     company: 'Acme International',
   },
 };
+
+const DEMO_AUTH_ENABLED =
+  process.env.NODE_ENV === 'development' &&
+  process.env.NEXT_PUBLIC_ENABLE_MOCK_AUTH === 'true';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -110,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Check if an explicit offline/demo session was established
         const isAuthenticated = localStorage.getItem('subflow_authenticated') === 'true';
-        if (isAuthenticated) {
+        if (isAuthenticated && DEMO_AUTH_ENABLED) {
           const savedRole = localStorage.getItem('subflow_role') || 'admin';
           const active = DEMO_USERS[savedRole] || DEMO_USERS.admin;
           setUser(active);
@@ -123,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.warn('Firebase client initialization note:', err);
       const isAuthenticated = localStorage.getItem('subflow_authenticated') === 'true';
-      if (isAuthenticated) {
+      if (isAuthenticated && DEMO_AUTH_ENABLED) {
         const savedRole = localStorage.getItem('subflow_role') || 'admin';
         const active = DEMO_USERS[savedRole] || DEMO_USERS.admin;
         setUser(active);
@@ -254,11 +258,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginWithDemo = (role: 'admin' | 'staff' | 'customer') => {
+    if (!DEMO_AUTH_ENABLED) return false;
     const nextUser = DEMO_USERS[role] || DEMO_USERS.admin;
     setUser(nextUser);
     localStorage.setItem('subflow_authenticated', 'true');
     localStorage.setItem('subflow_role', nextUser.role);
     localStorage.setItem('subflow_uid', nextUser.uid);
+    return true;
   };
 
   const logout = async () => {

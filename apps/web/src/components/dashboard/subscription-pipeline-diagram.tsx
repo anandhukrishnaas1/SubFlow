@@ -6,73 +6,54 @@ import {
   Repeat,
   Zap,
   CreditCard,
-  ShieldCheck,
-  ArrowRight,
+  BarChart3,
   Sparkles,
-  CheckCircle2,
   Cpu,
 } from 'lucide-react';
-import { useCurrency } from '@/hooks/use-currency';
 
 export function SubscriptionPipelineDiagram() {
-  const { formatAmount } = useCurrency();
   const [activeStep, setActiveStep] = useState<number>(2);
 
   const steps = [
     {
       id: 1,
-      title: 'Quotation Ingestion',
-      subtitle: 'e-Signature & Approval',
+      title: 'Quote Management',
+      subtitle: 'Create and convert quotations',
       icon: FileText,
-      metric: formatAmount(18400),
-      metricLabel: 'Active Pipeline',
-      badge: '94% Win Rate',
-      tech: 'SubFlow Quote Engine → e-Sign Webhook',
-      details: 'Drafted quotations convert to live subscriptions upon customer acceptance or admin one-click confirmation.',
+      area: 'Quotation workflow',
+      details: 'Create and send quotations, then convert accepted quotes into subscriptions and invoices.',
     },
     {
       id: 2,
-      title: 'Subscription Engine',
-      subtitle: 'Cycle Provisioning',
+      title: 'Subscription Lifecycle',
+      subtitle: 'Manage recurring plans',
       icon: Repeat,
-      metric: '350 Active',
-      metricLabel: 'Live Subscribers',
-      badge: '+12 Today',
-      tech: 'Firestore State Engine & Event Emitter',
-      details: 'Subscriptions manage multi-tier plans (Starter, Pro, Enterprise), track recurring cycles, and calculate proration.',
+      area: 'Subscription API',
+      details: 'Create, activate, pause, resume, renew, and cancel subscriptions across supported billing intervals.',
     },
     {
       id: 3,
-      title: 'Automated Billing',
-      subtitle: 'BullMQ Cron Dispatch',
+      title: 'Scheduled Billing',
+      subtitle: 'Generate invoices for due subscriptions',
       icon: Zap,
-      metric: formatAmount(42860),
-      metricLabel: 'Monthly Invoiced',
-      badge: '100% On Time',
-      tech: 'BullMQ Scheduled Queue & PDFKit Engine',
-      details: 'Automated billing jobs evaluate due dates, apply active discounts and region taxes, and generate PDF invoices.',
+      area: 'Billing scheduler',
+      details: 'Scheduled billing evaluates due subscriptions and creates invoices using configured prices, discounts, and taxes.',
     },
     {
       id: 4,
-      title: 'Payment Settlement',
-      subtitle: 'Multi-Gateway Collect',
+      title: 'Payment Recording',
+      subtitle: 'Reconcile transactions and invoices',
       icon: CreditCard,
-      metric: '99.4%',
-      metricLabel: 'First-Try Success',
-      badge: 'Instant Sync',
-      tech: 'Stripe, Razorpay & UPI AutoPay Webhooks',
-      details: 'Seamlessly processes card tokenization, direct bank debits, and Indian UPI AutoPay mandates.',
+      area: 'Payment reconciliation',
+      details: 'Record payment transactions and reconcile invoice balances with duplicate-reference protection.',
     },
     {
       id: 5,
-      title: 'Smart Dunning',
-      subtitle: 'Recovery & Retention',
-      icon: ShieldCheck,
-      metric: '98.6%',
-      metricLabel: 'Recovered Revenue',
-      badge: 'AI Smart Retries',
-      tech: 'Intelligent Exponential Backoff Scheduler',
-      details: 'Failed payments trigger smart retry sequences with automated customer email alerts, preventing involuntary churn.',
+      title: 'Analytics & Copilot',
+      subtitle: 'Report from billing source records',
+      icon: BarChart3,
+      area: 'Analytics API',
+      details: 'Calculate metrics from source records and explicitly report when historical snapshots are unavailable.',
     },
   ];
 
@@ -86,19 +67,12 @@ export function SubscriptionPipelineDiagram() {
               <Cpu className="h-3.5 w-3.5" />
             </span>
             <h3 className="text-lg font-black text-stone-900 tracking-tight">
-              Subscription Lifecycle & Pipeline Architecture
+              Subscription & Billing Workflow
             </h3>
           </div>
           <p className="text-xs text-stone-500 mt-1 font-medium">
-            Interactive view of SubFlow&apos;s automated recurring billing pipeline and payment mechanics
+            An interactive overview of supported quotation, subscription, billing, payment, and analytics workflows.
           </p>
-        </div>
-
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            All 5 Systems Operational
-          </span>
         </div>
       </div>
 
@@ -155,16 +129,8 @@ export function SubscriptionPipelineDiagram() {
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-stone-200/60">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-sm font-black text-stone-900 font-mono">
-                      {step.metric}
-                    </span>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/80">
-                      {step.badge}
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-stone-400 font-semibold block mt-0.5">
-                    {step.metricLabel}
+                  <span className="text-[10px] text-stone-500 font-semibold">
+                    {step.area}
                   </span>
                 </div>
               </button>
@@ -183,10 +149,10 @@ export function SubscriptionPipelineDiagram() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-stone-900 text-xs">
-                  {steps[activeStep - 1].title} — Architecture Insights
+                  {steps[activeStep - 1].title} — Workflow Details
                 </span>
                 <span className="font-mono text-[10px] text-orange-700 bg-orange-100/70 px-2 py-0.5 rounded-md font-semibold">
-                  {steps[activeStep - 1].tech}
+                  {steps[activeStep - 1].area}
                 </span>
               </div>
               <p className="text-stone-600 text-[11px] mt-0.5 font-medium">
@@ -195,10 +161,6 @@ export function SubscriptionPipelineDiagram() {
             </div>
           </div>
 
-          <div className="shrink-0 flex items-center gap-2">
-            <span className="text-[11px] text-stone-400 font-medium">Auto-pilot managed</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-          </div>
         </div>
       )}
     </div>

@@ -8,10 +8,14 @@ service cloud.firestore {
     function isAdminOrStaff() { return isAdmin() || isStaff(); }
     function isOwner(customerId) { return isAuthenticated() && request.auth.uid == customerId; }
 
-    // Users — admin can read/write all, users can read/update own profile
+    // Users can only update profile fields; privileged fields stay server-owned.
     match /users/{userId} {
       allow read: if isAdminOrStaff() || request.auth.uid == userId;
-      allow write: if isAdmin() || request.auth.uid == userId;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() ||
+        (request.auth.uid == userId &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['displayName', 'photoURL', 'phone', 'address', 'city', 'state', 'country', 'zipCode', 'updatedAt']));
 
       match /notifications/{notifId} {
         allow read, write: if isAdminOrStaff() || request.auth.uid == userId;
@@ -42,7 +46,7 @@ service cloud.firestore {
       allow write: if isAdminOrStaff();
 
       match /items/{itemId} {
-        allow read: if isAuthenticated();
+        allow read: if isAdminOrStaff() || isOwner(get(/databases/$(database)/documents/quotations/$(quotationId)).data.customerId);
         allow write: if isAdminOrStaff();
       }
     }
@@ -53,7 +57,7 @@ service cloud.firestore {
       allow write: if isAdminOrStaff();
 
       match /items/{itemId} {
-        allow read: if isAuthenticated();
+        allow read: if isAdminOrStaff() || isOwner(get(/databases/$(database)/documents/subscriptions/$(subId)).data.customerId);
         allow write: if isAdminOrStaff();
       }
       match /activities/{activityId} {
@@ -68,7 +72,7 @@ service cloud.firestore {
       allow write: if isAdminOrStaff();
 
       match /items/{itemId} {
-        allow read: if isAuthenticated();
+        allow read: if isAdminOrStaff() || isOwner(get(/databases/$(database)/documents/invoices/$(invId)).data.customerId);
         allow write: if isAdminOrStaff();
       }
     }
@@ -81,7 +85,7 @@ service cloud.firestore {
 
     // Counters (KPIs)
     match /counters/{docId} {
-      allow read: if isAuthenticated();
+      allow read: if isAdminOrStaff();
       allow write: if isAdminOrStaff();
     }
 
@@ -93,7 +97,8 @@ service cloud.firestore {
 
     // Global Activity Logs
     match /activityLogs/{logId} {
-      allow read, write: if isAdminOrStaff();
+      allow read: if isAdminOrStaff();
+      allow write: if false;
     }
   }
 }

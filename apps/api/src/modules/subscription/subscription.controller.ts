@@ -7,6 +7,7 @@ import {
   Param,
   Query,
   UseGuards,
+  NotFoundException,
 } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import { FirebaseAuthGuard } from '../../common/guards/firebase-auth.guard';
@@ -34,12 +35,21 @@ export class SubscriptionController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.subscriptionService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const subscription = await this.subscriptionService.findOne(id);
+    this.assertOwner(subscription, user);
+    return subscription;
   }
 
   @Get(':id/activities')
-  async getActivities(@Param('id') id: string) {
+  async getActivities(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    this.assertOwner(await this.subscriptionService.findOne(id), user);
     return this.subscriptionService.getActivities(id);
   }
 
@@ -158,16 +168,25 @@ export class SubscriptionController {
   async cancel(
     @Param('id') id: string,
     @Body('reason') reason: string,
-    @CurrentUser('uid') userId: string,
-    @CurrentUser('name') userName: string,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
+    this.assertOwner(await this.subscriptionService.findOne(id), user);
     return this.subscriptionService.setStatus(
       id,
       SubscriptionStatus.CANCELLED,
-      userId,
-      userName,
+      user.uid,
+      user.name,
       { reason },
     );
+  }
+
+  private assertOwner(
+    resource: { customerId?: string },
+    user: AuthenticatedUser,
+  ): void {
+    if (user.role === UserRole.CUSTOMER && resource.customerId !== user.uid) {
+      throw new NotFoundException('Subscription not found');
+    }
   }
 
   @Patch(':id/close')

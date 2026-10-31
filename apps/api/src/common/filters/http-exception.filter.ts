@@ -4,14 +4,13 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
-  Logger,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
+import { getRequestContext } from '../request-context';
+import { writeStructuredLog } from '../structured-log';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  private readonly logger = new Logger(AllExceptionsFilter.name);
-
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -24,16 +23,25 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status = exception.getStatus();
       const res = exception.getResponse();
       message = typeof res === 'string' ? res : (res as any).message || res;
-    } else if (exception instanceof Error) {
-      message = exception.message;
-      this.logger.error(`Unhandled Exception at ${request.method} ${request.url}: ${exception.stack}`);
     }
 
+    const context = getRequestContext();
+    writeStructuredLog(status >= 500 ? 'error' : 'warn', {
+      method: request.method,
+      path: request.path,
+      statusCode: status,
+      error:
+        exception instanceof Error
+          ? exception.stack || exception.message
+          : String(exception),
+    });
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),
-      path: request.url,
-      error: message,
+      path: request.path,
+      requestId: context?.requestId,
+      correlationId: context?.correlationId,
+      error: status >= 500 ? 'Internal server error' : message,
     });
   }
 }

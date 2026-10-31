@@ -226,13 +226,25 @@ export class MockFirestore {
   }
 
   async runTransaction(updateFunction: (tx: any) => Promise<any>): Promise<any> {
-    const tx = {
+    const writes: Array<() => Promise<void>> = [];
+    const tx: any = {
       get: (ref: any) => ref.get(),
-      set: (ref: any, data: any, opts?: any) => ref.set(data, opts),
-      update: (ref: any, data: any) => ref.update(data),
-      delete: (ref: any) => ref.delete(),
+      set: (ref: any, data: any, opts?: any) => {
+        writes.push(() => ref.set(data, opts));
+        return tx;
+      },
+      update: (ref: any, data: any) => {
+        writes.push(() => ref.update(data));
+        return tx;
+      },
+      delete: (ref: any) => {
+        writes.push(() => ref.delete());
+        return tx;
+      },
     };
-    return updateFunction(tx);
+    const result = await updateFunction(tx);
+    for (const write of writes) await write();
+    return result;
   }
 
   private seedDefaults() {
@@ -289,7 +301,7 @@ export class MockFirestore {
     ];
 
     for (const u of users) {
-      this.store.set(`users/${u.id}`, u);
+      this.store.set(`users/${u.id}`, { ...u, dataOrigin: 'SYNTHETIC' });
     }
 
     // 2. Products
@@ -333,7 +345,7 @@ export class MockFirestore {
     ];
 
     for (const p of products) {
-      this.store.set(`products/${p.id}`, p);
+      this.store.set(`products/${p.id}`, { ...p, dataOrigin: 'SYNTHETIC' });
     }
 
     // 3. Plans
@@ -368,7 +380,7 @@ export class MockFirestore {
     ];
 
     for (const pl of plans) {
-      this.store.set(`plans/${pl.id}`, pl);
+      this.store.set(`plans/${pl.id}`, { ...pl, dataOrigin: 'SYNTHETIC' });
     }
 
     // 4. Subscriptions
@@ -419,7 +431,7 @@ export class MockFirestore {
     ];
 
     for (const s of subscriptions) {
-      this.store.set(`subscriptions/${s.id}`, s);
+      this.store.set(`subscriptions/${s.id}`, { ...s, dataOrigin: 'SYNTHETIC' });
     }
 
     // 5. Invoices
@@ -472,7 +484,7 @@ export class MockFirestore {
     ];
 
     for (const inv of invoices) {
-      this.store.set(`invoices/${inv.id}`, inv);
+      this.store.set(`invoices/${inv.id}`, { ...inv, dataOrigin: 'SYNTHETIC' });
     }
 
     // 6. Payments
@@ -492,7 +504,7 @@ export class MockFirestore {
     ];
 
     for (const p of payments) {
-      this.store.set(`payments/${p.id}`, p);
+      this.store.set(`payments/${p.id}`, { ...p, dataOrigin: 'SYNTHETIC' });
     }
 
     // 7. Taxes
@@ -501,7 +513,7 @@ export class MockFirestore {
       { id: 'tax_us_state', name: 'State Sales Tax (8.25%)', percentage: 8.25, type: 'percentage', status: 'active', createdAt: now },
     ];
     for (const t of taxes) {
-      this.store.set(`taxes/${t.id}`, t);
+      this.store.set(`taxes/${t.id}`, { ...t, dataOrigin: 'SYNTHETIC' });
     }
 
     // 8. Discounts
@@ -510,7 +522,7 @@ export class MockFirestore {
       { id: 'disc_launch50', name: 'Launch Savings', code: 'LAUNCH50', type: 'fixed', value: 50, maxUsage: 50, currentUsage: 1, status: 'active', createdAt: now },
     ];
     for (const d of discounts) {
-      this.store.set(`discounts/${d.id}`, d);
+      this.store.set(`discounts/${d.id}`, { ...d, dataOrigin: 'SYNTHETIC' });
     }
 
     // 9. Quotations
@@ -535,7 +547,7 @@ export class MockFirestore {
       },
     ];
     for (const q of quotations) {
-      this.store.set(`quotations/${q.id}`, q);
+      this.store.set(`quotations/${q.id}`, { ...q, dataOrigin: 'SYNTHETIC' });
     }
 
     // 10. Counters
