@@ -3,37 +3,56 @@
 import React from 'react';
 import { TrendingUp, ArrowUpRight, ArrowDownRight, Wallet, Percent, ShieldCheck, DollarSign } from 'lucide-react';
 import { useCurrency } from '@/hooks/use-currency';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 
 export function CashFlowDiagram() {
   const { formatAmount, symbol } = useCurrency();
 
+  const { data: kpis = {} } = useQuery({
+    queryKey: ['kpis'],
+    queryFn: () => api.getKpis(),
+    refetchInterval: 5000,
+  });
+
+  const { data: subscriptions = [] } = useQuery({
+    queryKey: ['subscriptions'],
+    queryFn: () => api.getSubscriptions(),
+  });
+
+  const activeSubsCount = (subscriptions as any[]).filter((s: any) => s.status === 'active').length;
+  const mrr = Number(kpis?.mrr) || 0;
+  const totalRevenue = Number(kpis?.totalRevenue) || 0;
+  const outstanding = Number(kpis?.outstandingPayments) || 0;
+  const arpu = activeSubsCount > 0 ? Math.round((mrr / activeSubsCount) * 100) / 100 : 0;
+
   const metrics = [
     {
-      label: 'New Bookings MRR',
-      value: 8400,
-      change: '+18.4%',
+      label: 'Recurring MRR Run-rate',
+      value: mrr,
+      change: 'Active MRR',
       isPositive: true,
       color: 'text-emerald-700 bg-emerald-50 border-emerald-200',
       barColor: 'bg-emerald-500',
-      percentage: '65%',
+      percentage: '100%',
     },
     {
-      label: 'Expansion / Add-ons',
-      value: 4200,
-      change: '+9.2%',
+      label: 'Total Collected Inflow',
+      value: totalRevenue,
+      change: 'Settled',
       isPositive: true,
       color: 'text-orange-700 bg-orange-50 border-orange-200',
       barColor: 'bg-orange-500',
-      percentage: '35%',
+      percentage: totalRevenue > 0 ? '80%' : '15%',
     },
     {
-      label: 'Contraction & Churn',
-      value: 1100,
-      change: '-0.8%',
-      isPositive: false,
-      color: 'text-rose-700 bg-rose-50 border-rose-200',
-      barColor: 'bg-rose-500',
-      percentage: '12%',
+      label: 'Outstanding Invoices',
+      value: outstanding,
+      change: outstanding > 0 ? 'Pending' : 'Zero Due',
+      isPositive: outstanding === 0,
+      color: outstanding > 0 ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-emerald-700 bg-emerald-50 border-emerald-200',
+      barColor: outstanding > 0 ? 'bg-amber-500' : 'bg-emerald-500',
+      percentage: outstanding > 0 ? '30%' : '0%',
     },
   ];
 
@@ -58,7 +77,7 @@ export function CashFlowDiagram() {
         <div className="flex items-center gap-2">
           <div className="px-3.5 py-1.5 rounded-full bg-stone-50 border border-stone-200/90 text-xs font-bold text-stone-700 flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span>Net Inflow: {formatAmount(11500)}</span>
+            <span>Net Inflow: {formatAmount(totalRevenue || mrr)}</span>
           </div>
         </div>
       </div>
@@ -146,7 +165,7 @@ export function CashFlowDiagram() {
                   <span className="text-[10px] text-stone-400">Blended Plan ARPU</span>
                 </div>
                 <span className="text-sm font-black text-stone-900 font-mono">
-                  {formatAmount(142)}/mo
+                  {formatAmount(arpu)}/mo
                 </span>
               </div>
 

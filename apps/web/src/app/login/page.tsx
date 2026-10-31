@@ -24,7 +24,7 @@ import { useAuth } from '@/hooks/use-auth';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, register, loginWithGoogle, loginWithApple, loginWithDemo } = useAuth();
+  const { login, register, sendPasswordReset, loginWithGoogle, loginWithApple, loginWithDemo } = useAuth();
 
   const [mode, setMode] = useState<'signin' | 'register'>('signin');
   const [name, setName] = useState('');
@@ -38,6 +38,22 @@ export default function LoginPage() {
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
+
+  const validatePassword = (pwd: string): string | null => {
+    if (pwd.length <= 8) {
+      return 'Password must be more than 8 characters long.';
+    }
+    if (!/[A-Z]/.test(pwd)) {
+      return 'Password must contain at least one uppercase letter (A-Z).';
+    }
+    if (!/[a-z]/.test(pwd)) {
+      return 'Password must contain at least one lowercase letter (a-z).';
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>_~-]/.test(pwd)) {
+      return 'Password must contain at least one special character (!@#$%^&*...).';
+    }
+    return null;
+  };
 
   const handleRolePreset = (preset: 'admin' | 'staff' | 'customer') => {
     setRole(preset);
@@ -60,7 +76,7 @@ export default function LoginPage() {
       case 'auth/email-already-in-use':
         return 'An account with this email already exists. Please switch to Sign In.';
       case 'auth/weak-password':
-        return 'Password is too weak. Please use at least 6 characters.';
+        return 'Password is too weak. Please use at least 8 characters with upper, lower, and special symbols.';
       case 'auth/invalid-email':
         return 'Please enter a valid work email address.';
       case 'auth/popup-closed-by-user':
@@ -75,6 +91,14 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
+
+    if (mode === 'register') {
+      const pwdError = validatePassword(password);
+      if (pwdError) {
+        setError(pwdError);
+        return;
+      }
+    }
 
     setLoading(true);
     setError(null);
@@ -124,14 +148,20 @@ export default function LoginPage() {
     }
   };
 
-  const handleForgotSubmit = (e: React.FormEvent) => {
+  const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setForgotSuccess(true);
-    setTimeout(() => {
-      setForgotSuccess(false);
-      setForgotModalOpen(false);
-      setForgotEmail('');
-    }, 2000);
+    if (!forgotEmail) return;
+    try {
+      await sendPasswordReset(forgotEmail);
+      setForgotSuccess(true);
+      setTimeout(() => {
+        setForgotSuccess(false);
+        setForgotModalOpen(false);
+        setForgotEmail('');
+      }, 2500);
+    } catch (err: any) {
+      setError(getFirebaseErrorMessage(err));
+    }
   };
 
   return (
@@ -182,34 +212,17 @@ export default function LoginPage() {
       {/* Top Navigation Bar with SubFlow Verified Branding */}
       <header className="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="relative">
-            {/* Custom Vector SubFlow Scallop Badge */}
-            <svg className="w-10 h-10 text-orange-600 transition-transform group-hover:scale-105" viewBox="0 0 100 100" fill="currentColor">
-              <path d="M50 0 C60 10, 65 15, 75 15 C85 15, 90 20, 95 30 C100 40, 100 45, 100 50 C100 55, 100 60, 95 70 C90 80, 85 85, 75 85 C65 85, 60 90, 50 100 C40 90, 35 85, 25 85 C15 85, 10 80, 5 70 C0 60, 0 55, 0 50 C0 45, 0 40, 5 30 C10 20, 15 15, 25 15 C35 15, 40 10, 50 0 Z" />
-              <path
-                d="M32 52 L44 64 L68 38"
-                stroke="#ffffff"
-                strokeWidth="10"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-            </svg>
-          </div>
-          <div>
-            <span className="text-xl font-black text-stone-900 tracking-tight block leading-none">
-              SubFlow
-            </span>
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-orange-600 block mt-0.5">
-              Automated Billing
-            </span>
-          </div>
+          <img
+            src="/subflow-logo.png"
+            alt="SubFlow"
+            className="h-9 sm:h-10 w-auto object-contain transition-transform group-hover:scale-105"
+          />
         </Link>
 
         <div className="flex items-center gap-3">
           <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-stone-600 bg-white/70 border border-stone-200/80 backdrop-blur-xs">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            Live Firebase Connected
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            System Online
           </span>
           <Link
             href="/login"
@@ -223,71 +236,86 @@ export default function LoginPage() {
       {/* Main Authentication Grid */}
       <main className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center flex-1">
         {/* Left Column: Visual Vector Telemetry & Value Pillars */}
-        <div className="hidden lg:flex lg:col-span-6 flex-col justify-center space-y-8 pr-4">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-100/80 border border-orange-200 text-orange-800 text-xs font-extrabold">
-              <Sparkles className="h-3.5 w-3.5 text-orange-600" />
-              <span>Enterprise Recurring Revenue Engine</span>
-            </div>
-            <h2 className="text-4xl sm:text-5xl font-black text-stone-900 tracking-tight leading-[1.1]">
+        <div className="hidden lg:flex lg:col-span-6 flex-col justify-center space-y-7 pr-6">
+          <div className="space-y-3">
+            <h2 className="text-4xl sm:text-5xl font-black text-stone-900 tracking-tight leading-[1.12]">
               Subscriptions. Billing. <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-amber-600 to-amber-700">
                 Automated without friction.
               </span>
             </h2>
             <p className="text-sm text-stone-600 font-medium leading-relaxed max-w-lg">
-              Manage recurring cycles, smart payment retry cascades, and real-time revenue telemetry from a single porcelain dashboard.
+              Manage recurring contracts, automated recurring invoicing, and real-time revenue telemetry from a unified subscription dashboard.
             </p>
           </div>
 
-          {/* Floating Glassmorphic Telemetry Cards */}
-          <div className="grid grid-cols-2 gap-4 max-w-lg">
-            {/* Card 1: Live MRR Pulse */}
-            <div className="p-5 rounded-3xl bg-white/90 backdrop-blur-md border border-stone-200/80 shadow-[0_8px_30px_-5px_rgba(0,0,0,0.04)] space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-stone-500">Live MRR Stream</span>
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black text-stone-900 font-mono">$42,860</span>
-                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  +18.4%
+          {/* Premium Porcelain Showcase Card with Lifecycle Pipeline */}
+          <div className="max-w-lg bg-white/80 backdrop-blur-md rounded-3xl border border-stone-200/90 p-5 shadow-[0_12px_40px_-10px_rgba(0,0,0,0.05)] space-y-4">
+            {/* Pipeline Stage Steps */}
+            <div>
+              <div className="flex items-center justify-between text-[11px] font-bold text-stone-500 mb-2">
+                <span>Contract-to-Cash Automation</span>
+                <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full text-[10px]">
+                  100% Automated
                 </span>
               </div>
-              {/* Vector Barcode Histogram */}
-              <div className="h-8 flex items-end gap-1 pt-1">
-                {[60, 45, 75, 90, 65, 80, 95, 70, 85, 100].map((h, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 rounded-full bg-gradient-to-t from-orange-600 to-amber-400"
-                    style={{ height: `${h}%` }}
-                  />
-                ))}
+              <div className="grid grid-cols-4 gap-1.5 text-center">
+                <div className="p-2 rounded-xl bg-orange-50/70 border border-orange-100 text-[11px] font-bold text-orange-900">
+                  1. Quote
+                </div>
+                <div className="p-2 rounded-xl bg-orange-50/70 border border-orange-100 text-[11px] font-bold text-orange-900">
+                  2. Contract
+                </div>
+                <div className="p-2 rounded-xl bg-orange-100/80 border border-orange-200 text-[11px] font-bold text-orange-950">
+                  3. Auto-Bill
+                </div>
+                <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-800">
+                  4. Settled
+                </div>
               </div>
             </div>
 
-            {/* Card 2: Goal Speedometer Preview */}
-            <div className="p-5 rounded-3xl bg-gradient-to-br from-orange-600 to-amber-600 text-white shadow-[0_12px_36px_-6px_rgba(234,88,12,0.35)] flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-orange-100">Monthly Target</span>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-white/20 text-white">
-                  On Pace
-                </span>
+            {/* Split Telemetry Chips */}
+            <div className="grid grid-cols-2 gap-3 pt-1 border-t border-stone-100">
+              <div className="p-3.5 rounded-2xl bg-stone-50/80 border border-stone-200/80 space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">Live MRR Run-Rate</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-black text-stone-900 font-mono">$42,860</span>
+                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">+18.4%</span>
+                </div>
               </div>
-              <div className="py-1">
-                <span className="text-3xl font-black tracking-tight">85%</span>
-                <p className="text-[11px] text-orange-100 font-medium mt-0.5">
-                  $85,000 of $100k target
-                </p>
+              <div className="p-3.5 rounded-2xl bg-gradient-to-br from-orange-600 to-amber-600 text-white shadow-sm space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-orange-100">Billing Success SLA</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-black font-mono">99.98%</span>
+                  <span className="text-[10px] font-extrabold bg-white/20 px-1.5 py-0.5 rounded-md">Realtime</span>
+                </div>
               </div>
-              <div className="w-full bg-black/20 h-1.5 rounded-full overflow-hidden flex">
-                <div className="bg-white h-full rounded-full" style={{ width: '85%' }} />
+            </div>
+
+            {/* Feature Checklist */}
+            <div className="grid grid-cols-2 gap-2 text-[11px] text-stone-600 font-medium pt-1">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5 text-orange-600 shrink-0" />
+                <span>Multi-interval (daily-yearly)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5 text-orange-600 shrink-0" />
+                <span>Dynamic ₹ INR / $ USD switch</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5 text-orange-600 shrink-0" />
+                <span>Product variant price deltas</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5 text-orange-600 shrink-0" />
+                <span>Automated PDF invoice generation</span>
               </div>
             </div>
           </div>
 
           {/* Trust badges */}
-          <div className="flex items-center gap-6 pt-2 text-xs font-semibold text-stone-500">
+          <div className="flex items-center gap-6 pt-1 text-xs font-semibold text-stone-500">
             <span className="flex items-center gap-1.5">
               <ShieldCheck className="h-4 w-4 text-emerald-600" /> SOC2 Type II Certified
             </span>
@@ -446,7 +474,7 @@ export default function LoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••"
                       required
-                      minLength={6}
+                      minLength={mode === 'register' ? 9 : 6}
                       className="w-full bg-stone-50/70 border border-stone-200 rounded-2xl pl-10 pr-11 py-2.5 text-xs sm:text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-orange-600 focus:ring-2 focus:ring-orange-500/20 transition-all font-medium"
                     />
                     <button
@@ -458,6 +486,11 @@ export default function LoginPage() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  {mode === 'register' && (
+                    <p className="text-[11px] text-stone-500 font-medium pt-1">
+                      Must be &gt; 8 characters with uppercase, lowercase, and special characters (!@#$%...).
+                    </p>
+                  )}
                 </div>
 
                 {/* Remember Me Checkbox */}

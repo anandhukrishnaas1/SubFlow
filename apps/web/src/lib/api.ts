@@ -615,6 +615,13 @@ function handleFallback(endpoint: string, options: RequestInit = {}): any {
 
   if (path === '/taxes') return demoStore.taxes;
   if (path === '/discounts') return demoStore.discounts;
+  if (path === '/activities') {
+    return [
+      { id: 'act_1', action: 'INVOICE_GENERATED', description: 'Generated monthly recurring invoice INV-20261031-0001 for Acme Corp', createdAt: new Date(Date.now() - 3600000).toISOString() },
+      { id: 'act_2', action: 'PAYMENT_RECEIVED', description: 'Payment of $93.60 received via Credit Card from Acme Corp', createdAt: new Date(Date.now() - 1800000).toISOString() },
+      { id: 'act_3', action: 'SUBSCRIPTION_ACTIVATED', description: 'Activated Starter Plan for TechStart Inc', createdAt: new Date(Date.now() - 7200000).toISOString() },
+    ];
+  }
 
   return [];
 }
@@ -629,12 +636,16 @@ export const api = {
   getProduct: (id: string) => fetchFromApi(`/products/${id}`),
   createProduct: (data: any) => fetchFromApi('/products', { method: 'POST', body: JSON.stringify(data) }),
   updateProduct: (id: string, data: any) => fetchFromApi(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteProduct: (id: string) => fetchFromApi(`/products/${id}`, { method: 'DELETE' }),
 
   // Plans
   getPlans: (status?: string) => fetchFromApi(`/plans${status ? `?status=${status}` : ''}`),
   getPlan: (id: string) => fetchFromApi(`/plans/${id}`),
   createPlan: (data: any) => fetchFromApi('/plans', { method: 'POST', body: JSON.stringify(data) }),
   updatePlan: (id: string, data: any) => fetchFromApi(`/plans/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deletePlan: (id: string) => fetchFromApi(`/plans/${id}`, { method: 'DELETE' }),
+  setPlanStatus: (id: string, status: 'active' | 'inactive') =>
+    fetchFromApi(`/plans/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
   // Customers
   getCustomers: (params?: { search?: string; status?: string }) => {
@@ -654,12 +665,14 @@ export const api = {
   createSubscription: (data: any) => fetchFromApi('/subscriptions', { method: 'POST', body: JSON.stringify(data) }),
   convertQuotation: (data: { quotationId: string; planId?: string }) =>
     fetchFromApi('/subscriptions/convert-quotation', { method: 'POST', body: JSON.stringify(data) }),
+  confirmSubscription: (id: string) => fetchFromApi(`/subscriptions/${id}/confirm`, { method: 'PATCH' }),
   activateSubscription: (id: string) => fetchFromApi(`/subscriptions/${id}/activate`, { method: 'PATCH' }),
   pauseSubscription: (id: string) => fetchFromApi(`/subscriptions/${id}/pause`, { method: 'PATCH' }),
   resumeSubscription: (id: string) => fetchFromApi(`/subscriptions/${id}/resume`, { method: 'PATCH' }),
   renewSubscription: (id: string) => fetchFromApi(`/subscriptions/${id}/renew`, { method: 'PATCH' }),
   triggerAutoRenew: () => fetchFromApi('/subscriptions/auto-renew', { method: 'POST' }),
   cancelSubscription: (id: string, reason?: string) => fetchFromApi(`/subscriptions/${id}/cancel`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
+  closeSubscription: (id: string) => fetchFromApi(`/subscriptions/${id}/close`, { method: 'PATCH' }),
   getSubscriptionActivities: (id: string) => fetchFromApi(`/subscriptions/${id}/activities`),
 
   // Invoices
@@ -687,12 +700,19 @@ export const api = {
   // Taxes & Discounts
   getTaxes: () => fetchFromApi('/taxes'),
   createTax: (data: any) => fetchFromApi('/taxes', { method: 'POST', body: JSON.stringify(data) }),
+  updateTax: (id: string, data: any) => fetchFromApi(`/taxes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTax: (id: string) => fetchFromApi(`/taxes/${id}`, { method: 'DELETE' }),
   getDiscounts: () => fetchFromApi('/discounts'),
   createDiscount: (data: any) => fetchFromApi('/discounts', { method: 'POST', body: JSON.stringify(data) }),
+  updateDiscount: (id: string, data: any) => fetchFromApi(`/discounts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteDiscount: (id: string) => fetchFromApi(`/discounts/${id}`, { method: 'DELETE' }),
   validateDiscount: (code: string, amount: number) => fetchFromApi(`/discounts/validate?code=${encodeURIComponent(code)}&amount=${amount}`),
 
   // Billing trigger
   triggerBillingRun: () => fetchFromApi('/billing/run', { method: 'POST' }),
+
+  // Activities
+  getActivities: (limit?: number) => fetchFromApi(`/activities${limit ? `?limit=${limit}` : ''}`),
 
   // Notifications
   getNotifications: () => fetchFromApi('/notifications'),

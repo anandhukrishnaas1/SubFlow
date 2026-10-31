@@ -3,9 +3,26 @@ import * as admin from 'firebase-admin';
 async function runSeed() {
   console.log('🌱 Starting SubFlow Firestore Seed...');
 
-  const projectId = process.env.FIREBASE_PROJECT_ID || 'subflow-demo';
+  const fs = require('fs');
+  const path = require('path');
+  const saPath = path.resolve(__dirname, '../../../../firebase-service-account.json');
+  let credentials: any = null;
+  if (fs.existsSync(saPath)) {
+    try {
+      credentials = JSON.parse(fs.readFileSync(saPath, 'utf8'));
+    } catch (e) {}
+  }
+
+  const projectId = credentials?.project_id || process.env.FIREBASE_PROJECT_ID || 'subflowofficial';
   if (!admin.apps.length) {
-    admin.initializeApp({ projectId });
+    if (credentials) {
+      admin.initializeApp({
+        credential: admin.credential.cert(credentials),
+        projectId,
+      });
+    } else {
+      admin.initializeApp({ projectId });
+    }
   }
 
   const db = admin.firestore();

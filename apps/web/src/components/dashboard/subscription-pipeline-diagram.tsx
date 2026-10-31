@@ -13,10 +13,57 @@ import {
   Cpu,
 } from 'lucide-react';
 import { useCurrency } from '@/hooks/use-currency';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 
 export function SubscriptionPipelineDiagram() {
   const { formatAmount } = useCurrency();
   const [activeStep, setActiveStep] = useState<number>(2);
+
+  const { data: quotations = [] } = useQuery({
+    queryKey: ['quotations'],
+    queryFn: () => api.getQuotations(),
+    refetchInterval: 5000,
+  });
+
+  const { data: subscriptions = [] } = useQuery({
+    queryKey: ['subscriptions'],
+    queryFn: () => api.getSubscriptions(),
+    refetchInterval: 5000,
+  });
+
+  const { data: invoices = [] } = useQuery({
+    queryKey: ['invoices'],
+    queryFn: () => api.getInvoices(),
+    refetchInterval: 5000,
+  });
+
+  const { data: payments = [] } = useQuery({
+    queryKey: ['payments'],
+    queryFn: () => api.getPayments(),
+    refetchInterval: 5000,
+  });
+
+  const { data: kpis = {} } = useQuery({
+    queryKey: ['kpis'],
+    queryFn: () => api.getKpis(),
+  });
+
+  const quotesTotal = (quotations as any[]).reduce(
+    (sum, q) => sum + (Number(q.total) || 0),
+    0,
+  );
+  const activeSubsCount = (subscriptions as any[]).filter(
+    (s: any) => s.status === 'active',
+  ).length;
+  const invoicesTotal = (invoices as any[]).reduce(
+    (sum, inv) => sum + (Number(inv.total) || 0),
+    0,
+  );
+  const paidPaymentsTotal = (payments as any[]).reduce(
+    (sum, p) => sum + (Number(p.amount) || 0),
+    0,
+  );
 
   const steps = [
     {
@@ -24,55 +71,60 @@ export function SubscriptionPipelineDiagram() {
       title: 'Quotation Ingestion',
       subtitle: 'e-Signature & Approval',
       icon: FileText,
-      metric: formatAmount(18400),
-      metricLabel: 'Active Pipeline',
-      badge: '94% Win Rate',
+      metric: formatAmount(quotesTotal),
+      metricLabel: `${(quotations as any[]).length} Active Quotes`,
+      badge: `${(quotations as any[]).filter((q: any) => q.status === 'accepted' || q.status === 'converted').length} Converted`,
       tech: 'SubFlow Quote Engine → e-Sign Webhook',
-      details: 'Drafted quotations convert to live subscriptions upon customer acceptance or admin one-click confirmation.',
+      details:
+        'Drafted quotations convert to live subscriptions upon customer acceptance or admin one-click confirmation.',
     },
     {
       id: 2,
       title: 'Subscription Engine',
       subtitle: 'Cycle Provisioning',
       icon: Repeat,
-      metric: '350 Active',
-      metricLabel: 'Live Subscribers',
-      badge: '+12 Today',
+      metric: `${activeSubsCount} Active`,
+      metricLabel: `${(subscriptions as any[]).length} Total Subscribers`,
+      badge: `${formatAmount(Number(kpis?.mrr) || 0)} MRR`,
       tech: 'Firestore State Engine & Event Emitter',
-      details: 'Subscriptions manage multi-tier plans (Starter, Pro, Enterprise), track recurring cycles, and calculate proration.',
+      details:
+        'Subscriptions manage multi-tier plans (Starter, Pro, Enterprise), track recurring cycles, and calculate proration.',
     },
     {
       id: 3,
       title: 'Automated Billing',
       subtitle: 'BullMQ Cron Dispatch',
       icon: Zap,
-      metric: formatAmount(42860),
-      metricLabel: 'Monthly Invoiced',
-      badge: '100% On Time',
+      metric: formatAmount(invoicesTotal),
+      metricLabel: `${(invoices as any[]).length} Invoices Generated`,
+      badge: 'Automated Cycles',
       tech: 'BullMQ Scheduled Queue & PDFKit Engine',
-      details: 'Automated billing jobs evaluate due dates, apply active discounts and region taxes, and generate PDF invoices.',
+      details:
+        'Automated billing jobs evaluate due dates, apply active discounts and region taxes, and generate PDF invoices.',
     },
     {
       id: 4,
       title: 'Payment Settlement',
       subtitle: 'Multi-Gateway Collect',
       icon: CreditCard,
-      metric: '99.4%',
-      metricLabel: 'First-Try Success',
-      badge: 'Instant Sync',
+      metric: formatAmount(paidPaymentsTotal),
+      metricLabel: `${(payments as any[]).length} Transactions Settled`,
+      badge: 'Live Gateways',
       tech: 'Stripe, Razorpay & UPI AutoPay Webhooks',
-      details: 'Seamlessly processes card tokenization, direct bank debits, and Indian UPI AutoPay mandates.',
+      details:
+        'Seamlessly processes card tokenization, direct bank debits, and Indian UPI AutoPay mandates.',
     },
     {
       id: 5,
       title: 'Smart Dunning',
       subtitle: 'Recovery & Retention',
       icon: ShieldCheck,
-      metric: '98.6%',
-      metricLabel: 'Recovered Revenue',
-      badge: 'AI Smart Retries',
+      metric: kpis?.overdueInvoices ? `${kpis.overdueInvoices} Overdue` : '100% Healthy',
+      metricLabel: `${formatAmount(Number(kpis?.outstandingPayments) || 0)} Outstanding`,
+      badge: 'Zero Default',
       tech: 'Intelligent Exponential Backoff Scheduler',
-      details: 'Failed payments trigger smart retry sequences with automated customer email alerts, preventing involuntary churn.',
+      details:
+        'Failed payments trigger smart retry sequences with automated customer email alerts, preventing involuntary churn.',
     },
   ];
 

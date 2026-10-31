@@ -38,6 +38,17 @@ export default function DashboardPage() {
     refetchInterval: 5000,
   });
 
+  const { data: subscriptions = [] } = useQuery({
+    queryKey: ['subscriptions'],
+    queryFn: () => api.getSubscriptions(),
+    refetchInterval: 5000,
+  });
+
+  const totalSubs = (subscriptions as any[]).length;
+  const activeSubs = (subscriptions as any[]).filter((s: any) => s.status === 'active').length;
+  const cancelledSubs = (subscriptions as any[]).filter((s: any) => s.status === 'cancelled').length;
+  const churnRate = totalSubs > 0 ? ((cancelledSubs / totalSubs) * 100).toFixed(1) + '%' : '0.0%';
+
   const handleShare = () => {
     if (typeof window !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
@@ -106,7 +117,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Top 4 Metric Cards Row matching Template */}
+          {/* Top 4 Metric Cards Row with REAL Business Values */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {/* Card 1: Total Revenue */}
             <div className="bg-white rounded-3xl p-6 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.06)] transition-all flex flex-col justify-between">
@@ -119,22 +130,22 @@ export default function DashboardPage() {
               <div className="mt-3">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="text-3xl font-black text-stone-900 tracking-tight font-mono">
-                    {formatAmount(3500)}
+                    {formatAmount(Number(kpis?.totalRevenue) || 0)}
                   </span>
                   <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    +4.8%
+                    Live
                   </span>
                 </div>
                 <p className="text-[11px] text-stone-400 mt-2 font-medium">
-                  +{formatAmount(150)} this week
+                  {kpis?.mrr ? `${formatAmount(Number(kpis.mrr))} MRR run-rate` : 'From confirmed payments'}
                 </p>
               </div>
             </div>
 
-            {/* Card 2: New Subscriptions */}
+            {/* Card 2: Active Subscriptions */}
             <div className="bg-white rounded-3xl p-6 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.06)] transition-all flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-stone-500">New Subscriptions</span>
+                <span className="text-xs font-bold text-stone-500">Active Subscriptions</span>
                 <div className="h-9 w-9 rounded-full bg-stone-50 border border-stone-100 flex items-center justify-center text-stone-700 shadow-2xs">
                   <Layers className="h-4 w-4" />
                 </div>
@@ -142,13 +153,15 @@ export default function DashboardPage() {
               <div className="mt-3">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="text-3xl font-black text-stone-900 tracking-tight font-mono">
-                    350
+                    {activeSubs}
                   </span>
-                  <span className="text-[11px] font-extrabold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
-                    -4.6%
+                  <span className="text-[11px] font-extrabold text-stone-700 bg-stone-100 px-2.5 py-0.5 rounded-full border border-stone-200">
+                    {totalSubs} Total
                   </span>
                 </div>
-                <p className="text-[11px] text-stone-400 mt-2 font-medium">+12 today</p>
+                <p className="text-[11px] text-stone-400 mt-2 font-medium">
+                  {kpis?.upcomingRenewals ? `${kpis.upcomingRenewals} renewals in 7d` : 'Next cycle on schedule'}
+                </p>
               </div>
             </div>
 
@@ -163,20 +176,22 @@ export default function DashboardPage() {
               <div className="mt-3">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="text-3xl font-black text-stone-900 tracking-tight font-mono">
-                    4.6%
+                    {churnRate}
                   </span>
                   <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    -0.8%
+                    Healthy
                   </span>
                 </div>
-                <p className="text-[11px] text-stone-400 mt-2 font-medium">On track to optimal churn</p>
+                <p className="text-[11px] text-stone-400 mt-2 font-medium">
+                  {cancelledSubs > 0 ? `${cancelledSubs} churned accounts` : 'Zero churn recorded'}
+                </p>
               </div>
             </div>
 
-            {/* Card 4: Active Users */}
+            {/* Card 4: Total Customers */}
             <div className="bg-white rounded-3xl p-6 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.06)] transition-all flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-stone-500">Active Users</span>
+                <span className="text-xs font-bold text-stone-500">Active Customers</span>
                 <div className="h-9 w-9 rounded-full bg-stone-50 border border-stone-100 flex items-center justify-center text-stone-700 shadow-2xs">
                   <UserCheck className="h-4 w-4" />
                 </div>
@@ -184,13 +199,15 @@ export default function DashboardPage() {
               <div className="mt-3">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="text-3xl font-black text-stone-900 tracking-tight font-mono">
-                    3,500
+                    {(Number(kpis?.totalCustomers) || 0).toLocaleString()}
                   </span>
                   <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    +4.8%
+                    Verified
                   </span>
                 </div>
-                <p className="text-[11px] text-stone-400 mt-2 font-medium">+120 this week</p>
+                <p className="text-[11px] text-stone-400 mt-2 font-medium">
+                  Direct database customers
+                </p>
               </div>
             </div>
           </div>

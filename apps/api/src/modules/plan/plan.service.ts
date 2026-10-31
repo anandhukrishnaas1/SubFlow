@@ -134,4 +134,14 @@ export class PlanService {
 
     return { id, status };
   }
+
+  async delete(id: string): Promise<any> {
+    const ref = this.collection.doc(id);
+    const doc = await ref.get();
+    if (!doc.exists) {
+      throw new NotFoundException(`Plan with ID ${id} not found`);
+    }
+    await ref.delete();
+    return { id, deleted: true };
+  }
 }

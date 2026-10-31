@@ -47,6 +47,21 @@ export class AuthService {
     const role = dto.role || UserRole.CUSTOMER;
     const password = dto.password || 'SubFlow@2026!';
 
+    if (dto.password) {
+      if (dto.password.length <= 8) {
+        throw new BadRequestException('Password must be more than 8 characters long');
+      }
+      if (!/[A-Z]/.test(dto.password)) {
+        throw new BadRequestException('Password must contain at least one uppercase letter (A-Z)');
+      }
+      if (!/[a-z]/.test(dto.password)) {
+        throw new BadRequestException('Password must contain at least one lowercase letter (a-z)');
+      }
+      if (!/[!@#$%^&*(),.?":{}|<>_~-]/.test(dto.password)) {
+        throw new BadRequestException('Password must contain at least one special character (!@#$%^&*...)');
+      }
+    }
+
     try {
       // 1. Create in Firebase Auth
       const userRecord = await this.firebase.getAuth().createUser({

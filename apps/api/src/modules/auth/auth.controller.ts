@@ -37,12 +37,12 @@ export class AuthController {
     return this.authService.getProfile(user.uid);
   }
 
-  // Public endpoint for first-time admin bootstrap or customer registration
+  // Public endpoint for customer registration (Staff creation is restricted to Admin via @Post('users'))
   @Post('register')
   async register(@Body() dto: any) {
     return this.authService.createUser({
       ...dto,
-      role: dto.role || UserRole.CUSTOMER,
+      role: UserRole.CUSTOMER,
     });
   }
 }

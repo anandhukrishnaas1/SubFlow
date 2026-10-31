@@ -4,6 +4,7 @@ import {
   Post,
   Put,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -48,5 +49,12 @@ export class PlanController {
   @Roles(UserRole.ADMIN)
   async setStatus(@Param('id') id: string, @Body('status') status: 'active' | 'inactive') {
     return this.planService.setStatus(id, status);
+  }
+
+  @Delete(':id')
+  @UseGuards(FirebaseAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async delete(@Param('id') id: string) {
+    return this.planService.delete(id);
   }
 }

@@ -32,12 +32,24 @@ export class QuotationService {
       q = q.where('status', '==', query.status);
     }
     const snap = await q.orderBy('createdAt', 'desc').get();
+    const now = new Date();
 
     return Promise.all(
       snap.docs.map(async (doc) => {
         const itemsSnap = await doc.ref.collection('items').get();
         const data = doc.data() as any;
         const items = itemsSnap.docs.map((i) => ({ id: i.id, ...i.data() }));
+
+        // Automatic expiration check
+        if (
+          data.expiresAt &&
+          new Date(data.expiresAt) < now &&
+          (data.status === QuotationStatus.DRAFT || data.status === QuotationStatus.SENT)
+        ) {
+          data.status = QuotationStatus.EXPIRED;
+          doc.ref.update({ status: QuotationStatus.EXPIRED, updatedAt: now.toISOString() }).catch(() => {});
+        }
+
         return { id: doc.id, ...data, items: items.length > 0 ? items : data.items || [] };
       }),
     );
@@ -52,6 +64,16 @@ export class QuotationService {
     const itemsSnap = await doc.ref.collection('items').get();
     const data = doc.data() as any;
     const items = itemsSnap.docs.map((i) => ({ id: i.id, ...i.data() }));
+
+    // Automatic expiration check
+    if (
+      data.expiresAt &&
+      new Date(data.expiresAt) < new Date() &&
+      (data.status === QuotationStatus.DRAFT || data.status === QuotationStatus.SENT)
+    ) {
+      data.status = QuotationStatus.EXPIRED;
+      doc.ref.update({ status: QuotationStatus.EXPIRED, updatedAt: new Date().toISOString() }).catch(() => {});
+    }
 
     return { id: doc.id, ...data, items: items.length > 0 ? items : data.items || [] };
   }
@@ -171,6 +193,21 @@ export class QuotationService {
 
     const data = doc.data() as any;
     const nowIso = new Date().toISOString();
+
+    if (data.status === QuotationStatus.EXPIRED || (data.expiresAt && new Date(data.expiresAt) < new Date())) {
+      if (data.status !== QuotationStatus.EXPIRED) {
+        await ref.update({ status: QuotationStatus.EXPIRED, updatedAt: nowIso });
+      }
+      throw new BadRequestException('Quotation has expired and cannot be accepted or converted.');
+    }
+
+    if (data.status === QuotationStatus.ACCEPTED) {
+      throw new BadRequestException('Quotation has already been accepted and converted.');
+    }
+
+    if (data.status === QuotationStatus.REJECTED) {
+      throw new BadRequestException('Quotation has been rejected and cannot be accepted.');
+    }
 
     await ref.update({
       status: QuotationStatus.ACCEPTED,

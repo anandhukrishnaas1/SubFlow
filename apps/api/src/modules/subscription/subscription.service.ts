@@ -100,11 +100,20 @@ export class SubscriptionService {
     // Plan info
     let planName = dto.planName || 'Custom Plan';
     let billingInterval = dto.billingInterval || 'monthly';
+    let autoClose = false;
+    let allowPause = true;
+    let allowRenewal = true;
+    let allowCancel = true;
     if (dto.planId) {
       const planDoc = await this.firebase.getFirestore().collection('plans').doc(dto.planId).get();
       if (planDoc.exists) {
-        planName = planDoc.data()?.name || planName;
-        billingInterval = planDoc.data()?.billingInterval || billingInterval;
+        const pd = planDoc.data() || {};
+        planName = pd.name || planName;
+        billingInterval = pd.billingInterval || billingInterval;
+        autoClose = pd.autoClose !== undefined ? Boolean(pd.autoClose) : false;
+        allowPause = pd.allowPause !== undefined ? Boolean(pd.allowPause) : true;
+        allowRenewal = pd.allowRenewal !== undefined ? Boolean(pd.allowRenewal) : true;
+        allowCancel = pd.allowCancel !== undefined ? Boolean(pd.allowCancel) : true;
       }
     }
 
@@ -160,6 +169,10 @@ export class SubscriptionService {
       quotationId: dto.quotationId || null,
       status: dto.status || SubscriptionStatus.DRAFT,
       autoRenew: dto.autoRenew !== undefined ? Boolean(dto.autoRenew) : true,
+      autoClose: dto.autoClose !== undefined ? Boolean(dto.autoClose) : autoClose,
+      allowPause: dto.allowPause !== undefined ? Boolean(dto.allowPause) : allowPause,
+      allowRenewal: dto.allowRenewal !== undefined ? Boolean(dto.allowRenewal) : allowRenewal,
+      allowCancel: dto.allowCancel !== undefined ? Boolean(dto.allowCancel) : allowCancel,
       renewalCount: 0,
       startDate,
       expiryDate: dto.expiryDate || null,
@@ -332,8 +345,12 @@ export class SubscriptionService {
     }
 
     const currentData = doc.data() as any;
-    if (currentData.status === SubscriptionStatus.CANCELLED) {
-      throw new BadRequestException(`Cannot renew a cancelled subscription (${id})`);
+    if (currentData.status === SubscriptionStatus.CANCELLED || currentData.status === SubscriptionStatus.CLOSED) {
+      throw new BadRequestException(`Cannot renew a ${currentData.status} subscription (${id})`);
+    }
+
+    if (currentData.allowRenewal === false) {
+      throw new BadRequestException(`Subscription policy does not allow renewal for this subscription (${id})`);
     }
 
     const itemsSnap = await ref.collection('items').get();
@@ -491,7 +508,53 @@ export class SubscriptionService {
     }
 
     const currentData = doc.data() as any;
-    const previousStatus = currentData.status;
+    const previousStatus = currentData.status as SubscriptionStatus;
+
+    if (previousStatus === status) {
+      return { id, ...currentData };
+    }
+
+    // State transition matrix according to lifecycle rules:
+    // Draft -> Quotation -> Confirmed -> Active -> Closed (or Paused / Cancelled)
+    const VALID_TRANSITIONS: Record<SubscriptionStatus, SubscriptionStatus[]> = {
+      [SubscriptionStatus.DRAFT]: [
+        SubscriptionStatus.CONFIRMED,
+        SubscriptionStatus.ACTIVE,
+        SubscriptionStatus.CANCELLED,
+      ],
+      [SubscriptionStatus.CONFIRMED]: [
+        SubscriptionStatus.ACTIVE,
+        SubscriptionStatus.CANCELLED,
+      ],
+      [SubscriptionStatus.ACTIVE]: [
+        SubscriptionStatus.PAUSED,
+        SubscriptionStatus.CANCELLED,
+        SubscriptionStatus.CLOSED,
+      ],
+      [SubscriptionStatus.PAUSED]: [
+        SubscriptionStatus.ACTIVE,
+        SubscriptionStatus.CANCELLED,
+        SubscriptionStatus.CLOSED,
+      ],
+      [SubscriptionStatus.CANCELLED]: [],
+      [SubscriptionStatus.CLOSED]: [],
+    };
+
+    const allowed = VALID_TRANSITIONS[previousStatus] || [];
+    if (!allowed.includes(status)) {
+      throw new BadRequestException(
+        `Invalid status transition: Cannot transition subscription from '${previousStatus}' to '${status}'. Allowed: [${allowed.join(', ')}]`,
+      );
+    }
+
+    // Enforce plan-configured lifecycle rules
+    if (status === SubscriptionStatus.PAUSED && currentData.allowPause === false) {
+      throw new BadRequestException('Subscription plan policy strictly forbids pausing.');
+    }
+    if (status === SubscriptionStatus.CANCELLED && currentData.allowCancel === false) {
+      throw new BadRequestException('Subscription plan policy strictly forbids early cancellation.');
+    }
+
     const now = new Date();
     const update: any = {
       status,
@@ -549,6 +612,37 @@ export class SubscriptionService {
     }
 
     return { id, ...currentData, ...update };
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
+  async processAutoClosures(): Promise<{ closed: number; errors: string[] }> {
+    const nowIso = new Date().toISOString();
+    const snap = await this.collection
+      .where('status', 'in', [SubscriptionStatus.ACTIVE, SubscriptionStatus.PAUSED])
+      .get();
+
+    let closed = 0;
+    const errors: string[] = [];
+
+    for (const doc of snap.docs) {
+      const data = doc.data() as any;
+      if (data.autoClose === true && data.expiryDate && data.expiryDate <= nowIso) {
+        try {
+          await this.setStatus(
+            doc.id,
+            SubscriptionStatus.CLOSED,
+            'system',
+            'Auto-Closure Engine',
+            { reason: 'Plan term expiration reached' },
+          );
+          closed++;
+        } catch (e: any) {
+          errors.push(`Auto-close error on ${doc.id}: ${e.message}`);
+        }
+      }
+    }
+
+    return { closed, errors };
   }
 
   async getActivities(id: string): Promise<any[]> {
