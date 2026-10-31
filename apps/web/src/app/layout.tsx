@@ -3,9 +3,12 @@ import './globals.css';
 import { Providers } from '@/components/providers';
 
 export const metadata: Metadata = {
-  title: 'SubFlow — Subscription Management & Recurring Billing',
+  title: 'SubFlow — Subscriptions. Simplified.',
   description:
     'Modern, event-driven subscription management and recurring billing platform powered by Firebase Firestore and real-time streams.',
+  icons: {
+    icon: '/subflow-logo.png',
+  },
 };
 
 export default function RootLayout({

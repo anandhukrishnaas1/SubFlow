@@ -6,8 +6,7 @@ import {
   Bell,
   Search,
   ExternalLink,
-  Star,
-  Sparkles,
+  BarChart2,
   Share2,
   HelpCircle,
   BookOpen,
@@ -38,15 +37,14 @@ export function Header({ onOpenAiAssistant }: HeaderProps) {
     <header className="h-16 border-b border-slate-200/80 bg-white/90 backdrop-blur-md sticky top-0 z-30 px-6 flex items-center justify-between">
       {/* Left: Platform Overview & Sub-menu */}
       <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-800 font-bold text-xs border border-slate-200">
-            SF
-          </div>
+        <div className="flex items-center gap-3">
+          <img
+            src="/subflow-logo.png"
+            alt="SubFlow"
+            className="h-6 w-auto object-contain"
+          />
+          <div className="h-4 w-px bg-slate-200" />
           <span className="font-bold text-slate-900 text-sm tracking-tight">Platform Overview</span>
-          <div className="flex items-center text-amber-500 gap-1 text-xs font-semibold pl-1">
-            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-            <span className="text-slate-500 font-medium">3</span>
-          </div>
         </div>
 
         {/* Traditional SaaS utility menu matching Image 2 */}
@@ -81,13 +79,13 @@ export function Header({ onOpenAiAssistant }: HeaderProps) {
           <span>Workbook</span>
         </button>
 
-        {/* Dashboard AI Assistant Trigger Button matching Image 2 */}
+        {/* Analytics Assistant Trigger Button */}
         <button
           onClick={onOpenAiAssistant}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-600/25 transition-all active:scale-95"
         >
-          <Sparkles className="h-3.5 w-3.5 text-white" />
-          <span>AI Assistant</span>
+          <BarChart2 className="h-3.5 w-3.5 text-white" />
+          <span>Analytics Copilot</span>
         </button>
 
         {/* Share Button */}

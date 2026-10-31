@@ -7,7 +7,6 @@ import { api } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import {
-  Sparkles,
   Repeat,
   FileText,
   CreditCard,
@@ -60,10 +59,13 @@ export default function CustomerPortalPage() {
       <main className="max-w-5xl mx-auto w-full p-6 md:p-10 space-y-8 flex-1">
         {/* Welcome Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/80">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center shadow-md shadow-blue-500/20">
-              <Sparkles className="h-6 w-6 text-white" />
-            </div>
+          <div className="flex items-center gap-4">
+            <img
+              src="/subflow-logo.png"
+              alt="SubFlow"
+              className="h-10 w-auto object-contain"
+            />
+            <div className="h-8 w-px bg-slate-200" />
             <div>
               <h1 className="text-2xl font-extrabold text-slate-900">Billing & Subscriptions</h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">

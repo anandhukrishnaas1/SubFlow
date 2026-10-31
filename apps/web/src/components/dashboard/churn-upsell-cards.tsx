@@ -15,11 +15,11 @@ import {
 import {
   AlertTriangle,
   TrendingUp,
-  Sparkles,
   ChevronRight,
   CheckCircle2,
   Users,
   Link as LinkIcon,
+  ArrowUpRight,
 } from 'lucide-react';
 
 const CHURN_PIE = [
@@ -145,7 +145,7 @@ export function ChurnUpsellCards() {
         <div className="space-y-1.5 border-t border-slate-100 pt-3">
           <button className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-xs font-medium text-slate-700 transition-colors">
             <span className="flex items-center gap-1.5 text-slate-800">
-              <Sparkles className="h-3.5 w-3.5 text-blue-600" /> AI-generated revenue
+              <TrendingUp className="h-3.5 w-3.5 text-emerald-600" /> Pipeline revenue forecast
             </span>
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
           </button>
@@ -158,11 +158,11 @@ export function ChurnUpsellCards() {
         </div>
       </div>
 
-      {/* 3. AI Insights Expansion Opportunities Card */}
+      {/* 3. Expansion Opportunities Card */}
       <div className="ui-card p-5 flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-bold text-slate-900 tracking-tight">AI Insights: Expansion</h4>
+            <h4 className="text-sm font-bold text-slate-900 tracking-tight">Expansion Opportunities</h4>
             <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
               High Propensity
             </span>

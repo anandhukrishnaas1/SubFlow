@@ -2,17 +2,18 @@
 
 import React, { useState } from 'react';
 import {
-  Sparkles,
+  BarChart2,
   X,
   Send,
   ArrowUp,
   TrendingUp,
   AlertTriangle,
   UserCheck,
-  Bot,
+  Activity,
   User,
   ChevronRight,
   Layers,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface Message {
@@ -173,10 +174,10 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
       <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
         <div className="flex items-center gap-2.5">
           <div className="h-8 w-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
-            <Sparkles className="h-4 w-4" />
+            <BarChart2 className="h-4 w-4" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-slate-900">Dashboard AI assistant</h2>
+            <h2 className="text-sm font-bold text-slate-900">Analytics Copilot</h2>
             <p className="text-[11px] text-slate-500 font-medium">Real-time revenue & subscription intelligence</p>
           </div>
         </div>
@@ -224,15 +225,15 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
               </div>
             ) : (
               <div className="flex items-start gap-2.5">
-                <div className="h-7 w-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm">
-                  <Bot className="h-3.5 w-3.5" />
+                <div className="h-7 w-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm">
+                  <Activity className="h-3.5 w-3.5" />
                 </div>
                 <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-4 text-xs max-w-[90%] shadow-sm space-y-3">
                   {m.title && (
                     <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                       <span className="font-extrabold text-slate-900 text-sm tracking-tight">{m.title}</span>
                       <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
-                        Live SubFlow Telemetry
+                        SubFlow Telemetry
                       </span>
                     </div>
                   )}

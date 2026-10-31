@@ -12,7 +12,6 @@ import {
   UserPlus,
   ArrowUpRight,
   ArrowDownRight,
-  Sparkles,
   Download,
   CheckCircle2,
 } from 'lucide-react';
@@ -251,7 +250,7 @@ export default function DashboardPage() {
                                   <span className="font-mono font-bold">120</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-4 text-orange-400">
-                                  <span>• AI Summaries:</span>
+                                  <span>• Event Summaries:</span>
                                   <span className="font-mono font-bold">140</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-4 text-sky-300">
@@ -279,7 +278,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded bg-orange-400" />
-                  <span className="text-slate-600">AI Summaries</span>
+                  <span className="text-slate-600">Event Summaries</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded bg-blue-600" />

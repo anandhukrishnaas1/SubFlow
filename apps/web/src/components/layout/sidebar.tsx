@@ -16,7 +16,6 @@ import {
   Percent,
   BarChart3,
   Zap,
-  Sparkles,
   ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
@@ -62,18 +61,12 @@ export function Sidebar() {
       <div>
         {/* Brand Header */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-slate-100">
-          <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <span className="font-extrabold text-lg tracking-tight text-slate-900">
-                SubFlow
-              </span>
-              <span className="block text-[10px] text-blue-600 font-bold -mt-1 tracking-wider uppercase">
-                Event-Driven
-              </span>
-            </div>
+          <Link href="/dashboard" className="flex items-center gap-2 group">
+            <img
+              src="/subflow-logo.png"
+              alt="SubFlow"
+              className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
+            />
           </Link>
 
           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
