@@ -1,5 +1,7 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import * as admin from 'firebase-admin';
+import * as fs from 'fs';
+import * as path from 'path';
 import { MockFirestore } from './mock-firestore';
 
 @Injectable()
@@ -13,27 +15,55 @@ export class FirebaseService implements OnModuleInit {
 
   onModuleInit() {
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
     const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
-    const projectId = process.env.FIREBASE_PROJECT_ID || 'subflow-demo';
+    let projectId = process.env.FIREBASE_PROJECT_ID || 'subflow-demo';
+
+    let credentials: any = null;
 
     if (serviceAccountJson) {
       try {
-        const credentials = JSON.parse(serviceAccountJson);
-        this.app = admin.apps.length
-          ? admin.app()
-          : admin.initializeApp({
-              credential: admin.credential.cert(credentials),
-              projectId,
-              storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${projectId}.appspot.com`,
-            });
-        this.auth = admin.auth(this.app);
-        this.db = admin.firestore(this.app);
-        this.storage = admin.storage(this.app);
-        this.logger.log(`Initialized Firebase Admin with Service Account for project: ${projectId}`);
-        return;
-      } catch (e) {
+        credentials = JSON.parse(serviceAccountJson);
+      } catch (e: any) {
         this.logger.warn(`Failed parsing FIREBASE_SERVICE_ACCOUNT_KEY: ${e.message}`);
       }
+    }
+
+    if (!credentials) {
+      const candidates = [
+        serviceAccountPath,
+        path.resolve(process.cwd(), 'firebase-service-account.json'),
+        path.resolve(process.cwd(), '../../firebase-service-account.json'),
+        path.resolve(__dirname, '../../../../firebase-service-account.json'),
+      ].filter(Boolean) as string[];
+
+      for (const candidate of candidates) {
+        if (fs.existsSync(candidate)) {
+          try {
+            credentials = JSON.parse(fs.readFileSync(candidate, 'utf8'));
+            this.logger.log(`Found Firebase service account file at: ${candidate}`);
+            break;
+          } catch (e: any) {
+            this.logger.warn(`Failed reading credentials from ${candidate}: ${e.message}`);
+          }
+        }
+      }
+    }
+
+    if (credentials) {
+      projectId = credentials.project_id || projectId;
+      this.app = admin.apps.length
+        ? admin.app()
+        : admin.initializeApp({
+            credential: admin.credential.cert(credentials),
+            projectId,
+            storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${projectId}.appspot.com`,
+          });
+      this.auth = admin.auth(this.app);
+      this.db = admin.firestore(this.app);
+      this.storage = admin.storage(this.app);
+      this.logger.log(`🔥 Initialized Firebase Admin connected to LIVE project: ${projectId}`);
+      return;
     }
 
     if (emulatorHost) {
