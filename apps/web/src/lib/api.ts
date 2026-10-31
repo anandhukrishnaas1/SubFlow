@@ -334,31 +334,207 @@ function handleFallback(endpoint: string, options: RequestInit = {}): any {
   if (path === '/subscriptions') {
     if (method === 'POST') {
       const body = JSON.parse((options.body as string) || '{}');
+      const nowIso = new Date().toISOString();
+      const nextDate = new Date();
+      nextDate.setMonth(nextDate.getMonth() + 1);
       const item = {
         id: `sub_${Date.now()}`,
-        number: `SUB-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+        number: `SUB-${nowIso.slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
         status: 'active',
-        startDate: new Date().toISOString(),
+        autoRenew: true,
+        renewalCount: 0,
+        startDate: nowIso,
+        nextBillingDate: nextDate.toISOString(),
+        recurringTotal: Number(body.total) || 0,
         ...body,
       };
       demoStore.subscriptions.unshift(item);
       demoStore.kpis.activeSubscriptions += 1;
-      demoStore.kpis.mrr += Number(item.total) || 0;
+      demoStore.kpis.mrr = Math.round((demoStore.kpis.mrr + (Number(item.total) || 0)) * 100) / 100;
       return item;
     }
     return demoStore.subscriptions;
+  }
+
+  if (path === '/subscriptions/convert-quotation' && method === 'POST') {
+    const body = JSON.parse((options.body as string) || '{}');
+    const quote = demoStore.quotations.find((q: any) => q.id === body.quotationId) || demoStore.quotations[0];
+    if (!quote) return null;
+
+    if (quote.convertedToSubscriptionId) {
+      const existingSub = demoStore.subscriptions.find((s: any) => s.id === quote.convertedToSubscriptionId);
+      const existingInv = demoStore.invoices.find((i: any) => i.id === quote.convertedInvoiceId);
+      if (existingSub) return { ...existingSub, invoice: existingInv || null, _alreadyConverted: true };
+    }
+
+    const now = new Date();
+    const nextBilling = new Date(now);
+    nextBilling.setMonth(nextBilling.getMonth() + 1);
+    const dueDate = new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000);
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+
+    const sub: any = {
+      id: `sub_${Date.now()}`,
+      number: `SUB-${dateStr}-${Math.floor(1000 + Math.random() * 9000)}`,
+      customerId: quote.customerId,
+      customerName: quote.customerName,
+      customerEmail: quote.customerEmail,
+      planId: body.planId || 'plan_pro_monthly',
+      planName: 'Converted from Quotation',
+      billingInterval: 'monthly',
+      quotationId: quote.id,
+      status: 'active',
+      autoRenew: true,
+      renewalCount: 0,
+      startDate: now.toISOString(),
+      nextBillingDate: nextBilling.toISOString(),
+      paymentTerms: 'Due on Receipt',
+      subtotal: Number(quote.subtotal ?? quote.total) || 0,
+      taxAmount: Number(quote.taxAmount) || 0,
+      discountAmount: Number(quote.discountAmount) || 0,
+      total: Number(quote.total) || 0,
+      recurringTotal: Number(quote.total) || 0,
+      items: quote.items || [],
+    };
+
+    const invoice: any = {
+      id: `inv_${Date.now()}`,
+      number: `INV-${dateStr}-${Math.floor(1000 + Math.random() * 9000)}`,
+      subscriptionId: sub.id,
+      subscriptionNumber: sub.number,
+      customerId: sub.customerId,
+      customerName: sub.customerName,
+      customerEmail: sub.customerEmail,
+      status: 'confirmed',
+      issueDate: now.toISOString(),
+      dueDate: dueDate.toISOString(),
+      billingPeriodStart: sub.startDate,
+      billingPeriodEnd: sub.nextBillingDate,
+      subtotal: sub.subtotal,
+      taxAmount: sub.taxAmount,
+      discountAmount: sub.discountAmount,
+      total: sub.total,
+      paidAmount: 0,
+      outstandingAmount: sub.total,
+      idempotencyKey: `quote-convert-${quote.id}`,
+      items: quote.items || [],
+    };
+
+    quote.status = 'accepted';
+    quote.acceptedAt = now.toISOString();
+    quote.convertedToSubscriptionId = sub.id;
+    quote.convertedToSubscriptionNumber = sub.number;
+    quote.convertedInvoiceId = invoice.id;
+    quote.convertedInvoiceNumber = invoice.number;
+
+    demoStore.subscriptions.unshift(sub);
+    demoStore.invoices.unshift(invoice);
+    demoStore.kpis.activeSubscriptions += 1;
+    demoStore.kpis.mrr = Math.round((demoStore.kpis.mrr + sub.total) * 100) / 100;
+    demoStore.kpis.outstandingPayments = Math.round((demoStore.kpis.outstandingPayments + invoice.outstandingAmount) * 100) / 100;
+
+    return { ...sub, invoice };
+  }
+
+  if ((path === '/subscriptions/auto-renew' || path === '/billing/run') && method === 'POST') {
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const dueSubs = demoStore.subscriptions.filter(
+      (s: any) => s.status === 'active' && s.nextBillingDate && new Date(s.nextBillingDate) <= now,
+    );
+    let invoicesCreated = 0;
+    for (const sub of dueSubs) {
+      const periodStart = sub.nextBillingDate || now.toISOString();
+      const nextBilling = new Date(now);
+      nextBilling.setMonth(nextBilling.getMonth() + 1);
+      const periodEnd = nextBilling.toISOString();
+      const subTotal = Number(sub.total ?? sub.recurringTotal) || 0;
+
+      const invoice: any = {
+        id: `inv_${Date.now()}_${invoicesCreated}`,
+        number: `INV-${dateStr}-${Math.floor(1000 + Math.random() * 9000)}`,
+        subscriptionId: sub.id,
+        subscriptionNumber: sub.number,
+        customerId: sub.customerId,
+        customerName: sub.customerName,
+        customerEmail: sub.customerEmail,
+        status: 'confirmed',
+        issueDate: now.toISOString(),
+        dueDate: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+        billingPeriodStart: periodStart,
+        billingPeriodEnd: periodEnd,
+        subtotal: Number(sub.subtotal ?? subTotal) || 0,
+        taxAmount: Number(sub.taxAmount) || 0,
+        discountAmount: Number(sub.discountAmount) || 0,
+        total: subTotal,
+        paidAmount: 0,
+        outstandingAmount: subTotal,
+        idempotencyKey: `billing-${sub.id}-${periodStart.slice(0, 10)}`,
+      };
+
+      sub.nextBillingDate = periodEnd;
+      sub.lastRenewedAt = now.toISOString();
+      sub.renewalCount = (Number(sub.renewalCount) || 0) + 1;
+      demoStore.invoices.unshift(invoice);
+      demoStore.kpis.outstandingPayments = Math.round((demoStore.kpis.outstandingPayments + subTotal) * 100) / 100;
+      invoicesCreated++;
+    }
+    return { processed: dueSubs.length, renewed: dueSubs.length, invoicesCreated, errors: [] };
   }
 
   if (path.startsWith('/subscriptions/')) {
     const parts = path.split('/');
     const id = parts[2];
     const action = parts[3];
-    const sub = demoStore.subscriptions.find((s: any) => s.id === id);
+    const sub: any = demoStore.subscriptions.find((s: any) => s.id === id);
     if (sub && action) {
-      if (action === 'activate') sub.status = 'active';
+      if (action === 'activate' || action === 'resume') sub.status = 'active';
       if (action === 'pause') sub.status = 'paused';
       if (action === 'cancel') sub.status = 'cancelled';
       if (action === 'confirm') sub.status = 'confirmed';
+      if (action === 'renew') {
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        const currentNext = sub.nextBillingDate ? new Date(sub.nextBillingDate) : now;
+        const baseDate = currentNext > now ? currentNext : now;
+        const nextBilling = new Date(baseDate);
+        if (sub.billingInterval === 'yearly') nextBilling.setFullYear(nextBilling.getFullYear() + 1);
+        else if (sub.billingInterval === 'weekly') nextBilling.setDate(nextBilling.getDate() + 7);
+        else if (sub.billingInterval === 'daily') nextBilling.setDate(nextBilling.getDate() + 1);
+        else nextBilling.setMonth(nextBilling.getMonth() + 1);
+
+        const subTotal = Number(sub.total ?? sub.recurringTotal) || 0;
+        const renewalCount = (Number(sub.renewalCount) || 0) + 1;
+        const invoice: any = {
+          id: `inv_${Date.now()}`,
+          number: `INV-${dateStr}-${Math.floor(1000 + Math.random() * 9000)}`,
+          subscriptionId: sub.id,
+          subscriptionNumber: sub.number,
+          customerId: sub.customerId,
+          customerName: sub.customerName,
+          customerEmail: sub.customerEmail,
+          status: 'confirmed',
+          issueDate: now.toISOString(),
+          dueDate: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+          billingPeriodStart: currentNext.toISOString(),
+          billingPeriodEnd: nextBilling.toISOString(),
+          subtotal: Number(sub.subtotal ?? subTotal) || 0,
+          taxAmount: Number(sub.taxAmount) || 0,
+          discountAmount: Number(sub.discountAmount) || 0,
+          total: subTotal,
+          paidAmount: 0,
+          outstandingAmount: subTotal,
+          idempotencyKey: `renew-${sub.id}-${dateStr}-${renewalCount}`,
+        };
+
+        sub.status = 'active';
+        sub.nextBillingDate = nextBilling.toISOString();
+        sub.lastRenewedAt = now.toISOString();
+        sub.renewalCount = renewalCount;
+        demoStore.invoices.unshift(invoice);
+        demoStore.kpis.outstandingPayments = Math.round((demoStore.kpis.outstandingPayments + subTotal) * 100) / 100;
+        return { ...sub, invoice };
+      }
       return sub;
     }
     return sub || demoStore.subscriptions[0];
@@ -366,8 +542,15 @@ function handleFallback(endpoint: string, options: RequestInit = {}): any {
 
   if (path === '/invoices') return demoStore.invoices;
   if (path.startsWith('/invoices/')) {
-    const id = path.split('/')[2];
-    return demoStore.invoices.find((i: any) => i.id === id) || demoStore.invoices[0];
+    const parts = path.split('/');
+    const id = parts[2];
+    const action = parts[3];
+    const inv: any = demoStore.invoices.find((i: any) => i.id === id);
+    if (inv && action === 'confirm') {
+      inv.status = 'confirmed';
+      return inv;
+    }
+    return inv || demoStore.invoices[0];
   }
 
   if (path === '/payments') {
@@ -382,7 +565,54 @@ function handleFallback(endpoint: string, options: RequestInit = {}): any {
     return demoStore.payments;
   }
 
-  if (path === '/quotations') return demoStore.quotations;
+  if (path === '/quotations') {
+    if (method === 'POST') {
+      const body = JSON.parse((options.body as string) || '{}');
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const validityDays = Number(body.validityDays) || 30;
+      const items = body.items || [];
+      const subtotal = items.reduce((s: number, i: any) => s + (Number(i.quantity) || 1) * (Number(i.unitPrice) || 0), 0);
+      const taxAmount = items.reduce((s: number, i: any) => s + (Number(i.taxAmount) || 0), 0);
+      const total = subtotal + taxAmount;
+      const item = {
+        id: `quo_${Date.now()}`,
+        number: `QUO-${dateStr}-${Math.floor(1000 + Math.random() * 9000)}`,
+        status: 'draft',
+        subtotal,
+        taxAmount,
+        discountAmount: 0,
+        total,
+        expiresAt: new Date(now.getTime() + validityDays * 24 * 60 * 60 * 1000).toISOString(),
+        createdAt: now.toISOString(),
+        ...body,
+      };
+      demoStore.quotations.unshift(item);
+      return item;
+    }
+    return demoStore.quotations;
+  }
+
+  if (path.startsWith('/quotations/')) {
+    const parts = path.split('/');
+    const id = parts[2];
+    const action = parts[3];
+    const quote: any = demoStore.quotations.find((q: any) => q.id === id);
+    if (quote && action) {
+      if (action === 'send') {
+        quote.status = 'sent';
+        return quote;
+      }
+      if (action === 'accept') {
+        return handleFallback('/subscriptions/convert-quotation', {
+          method: 'POST',
+          body: JSON.stringify({ quotationId: id, planId: 'plan_pro_monthly' }),
+        });
+      }
+    }
+    return quote || demoStore.quotations[0];
+  }
+
   if (path === '/taxes') return demoStore.taxes;
   if (path === '/discounts') return demoStore.discounts;
 
@@ -422,9 +652,13 @@ export const api = {
   },
   getSubscription: (id: string) => fetchFromApi(`/subscriptions/${id}`),
   createSubscription: (data: any) => fetchFromApi('/subscriptions', { method: 'POST', body: JSON.stringify(data) }),
+  convertQuotation: (data: { quotationId: string; planId?: string }) =>
+    fetchFromApi('/subscriptions/convert-quotation', { method: 'POST', body: JSON.stringify(data) }),
   activateSubscription: (id: string) => fetchFromApi(`/subscriptions/${id}/activate`, { method: 'PATCH' }),
   pauseSubscription: (id: string) => fetchFromApi(`/subscriptions/${id}/pause`, { method: 'PATCH' }),
   resumeSubscription: (id: string) => fetchFromApi(`/subscriptions/${id}/resume`, { method: 'PATCH' }),
+  renewSubscription: (id: string) => fetchFromApi(`/subscriptions/${id}/renew`, { method: 'PATCH' }),
+  triggerAutoRenew: () => fetchFromApi('/subscriptions/auto-renew', { method: 'POST' }),
   cancelSubscription: (id: string, reason?: string) => fetchFromApi(`/subscriptions/${id}/cancel`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
   getSubscriptionActivities: (id: string) => fetchFromApi(`/subscriptions/${id}/activities`),
 

@@ -42,7 +42,26 @@ export default function QuotationsPage() {
 
   const acceptMutation = useMutation({
     mutationFn: (id: string) => api.acceptQuotation(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['quotations'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['kpis'] });
+    },
+  });
+
+  const convertMutation = useMutation({
+    mutationFn: (quotationId: string) =>
+      api.convertQuotation({
+        quotationId,
+        planId: 'plan_pro_monthly',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['kpis'] });
+    },
   });
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -166,30 +185,26 @@ export default function QuotationsPage() {
                           {q.status !== 'accepted' && (
                             <button
                               onClick={() => acceptMutation.mutate(q.id)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold transition-colors"
+                              disabled={acceptMutation.isPending}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold transition-colors disabled:opacity-50"
                             >
-                              <CheckCircle2 className="h-3 w-3" /> Accept
+                              <CheckCircle2 className="h-3 w-3" /> Accept & Auto-Bill
                             </button>
                           )}
-                          <button
-                            onClick={async () => {
-                              await api.createSubscription({
-                                customerId: q.customerId,
-                                customerName: q.customerName,
-                                customerEmail: q.customerEmail,
-                                planName: 'Converted from Quotation',
-                                billingInterval: 'monthly',
-                                quotationId: q.id,
-                                total: q.total,
-                                items: q.items,
-                              });
-                              alert(`Quotation ${q.number} converted into live active subscription!`);
-                            }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-lg text-[11px] font-bold transition-colors"
-                            title="Convert into live recurring subscription"
-                          >
-                            <ArrowRightCircle className="h-3 w-3" /> Convert to Sub
-                          </button>
+                          {!q.convertedToSubscriptionId ? (
+                            <button
+                              onClick={() => convertMutation.mutate(q.id)}
+                              disabled={convertMutation.isPending}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-lg text-[11px] font-bold transition-colors disabled:opacity-50"
+                              title="Convert into live recurring subscription and confirmed invoice"
+                            >
+                              <ArrowRightCircle className="h-3 w-3" /> Convert to Sub
+                            </button>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold">
+                              <CheckCircle2 className="h-3 w-3" /> Converted
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))
