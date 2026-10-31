@@ -61,6 +61,27 @@ flowchart TB
 > **Full System Architecture Guide & Sequence Diagrams**: See [ARCHITECTURE.md](file:///Users/anandhukrishnaas/Desktop/SubFlow/ARCHITECTURE.md).
 
 ---
+## Performance & Scalability
+
+SubFlow is designed to minimize read latency, reduce unnecessary network requests, and support asynchronous processing across its subscription management and recurring billing workflows.
+
+- **Optimized Reads:** Pre-computed analytics counters and denormalized Firestore documents reduce the need for expensive aggregation queries.
+- **Real-Time Data Synchronization:** Firestore `onSnapshot` listeners deliver live updates to dashboards, notification badges, and invoice states without continuous API polling.
+- **Asynchronous Processing:** EventEmitter2 and BullMQ separate domain event handling and background jobs from the main request flow.
+- **Modular Backend:** NestJS modules separate subscription, billing, invoice, payment, customer, and tax responsibilities, making individual business components easier to maintain.
+- **Shared Type Definitions:** The shared workspace package centralizes enums, TypeScript types, and Zod validation schemas for consistency across application components.
+- **Database-Level Access Control:** Firestore Security Rules enforce role-based access restrictions at the database layer.
+
+### Engineering Goals
+
+| Goal | Approach |
+|---|---|
+| Low-latency reads | Pre-computed analytics and denormalized documents |
+| Live updates | Firestore real-time listeners |
+| Responsive API operations | Event-driven processing and background jobs |
+| Maintainability | Modular NestJS architecture |
+| Type consistency | Shared types and validation schemas |
+| Data access security | Firebase Authentication, authorization guards, and Firestore Security Rules |
 
 ## Environment Variables (.env)
 
