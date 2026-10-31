@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { FirebaseService } from '../../firebase/firebase.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EVENTS } from '@subflow/events';
@@ -19,6 +20,33 @@ export class InvoiceService {
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const rand = Math.floor(1000 + Math.random() * 9000);
     return `INV-${dateStr}-${rand}`;
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async checkAndUpdateOverdueInvoices(): Promise<void> {
+    const now = new Date().toISOString();
+
+    const snapshot = await this.collection
+      .where('status', '==', InvoiceStatus.CONFIRMED)
+      .where('dueDate', '<', now)
+      .get();
+
+    if (snapshot.empty) return;
+
+    const batch = this.firebase.getFirestore().batch();
+
+    snapshot.docs.forEach((doc) => {
+      batch.update(doc.ref, {
+        status: InvoiceStatus.OVERDUE,
+        updatedAt: now,
+      });
+    });
+
+    await batch.commit();
+
+    snapshot.docs.forEach((doc) => {
+      this.eventEmitter.emit(EVENTS.INVOICE_OVERDUE, { invoiceId: doc.id });
+    });
   }
 
   async findAll(query?: {
