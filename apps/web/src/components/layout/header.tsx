@@ -277,10 +277,14 @@ export function Header({ onOpenAiAssistant, onCreateInvoice, title }: HeaderProp
           )}
         </div>
 
-        {/* User Profile Avatar with gradient border matching template */}
-        <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 text-white flex items-center justify-center text-xs font-bold shadow-sm ring-2 ring-white overflow-hidden">
+        {/* User Profile Avatar with link to login / switch accounts */}
+        <Link
+          href="/login"
+          className="h-9 w-9 rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 text-white flex items-center justify-center text-xs font-bold shadow-sm ring-2 ring-white overflow-hidden transition-transform hover:scale-105 active:scale-95"
+          title={`Signed in as ${user?.displayName || 'User'} (${user?.role || 'admin'}) — Click to switch user`}
+        >
           {user?.displayName ? user.displayName.slice(0, 1).toUpperCase() : 'A'}
-        </div>
+        </Link>
       </div>
     </header>
   );

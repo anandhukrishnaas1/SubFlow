@@ -20,6 +20,7 @@ import {
   X,
   Menu,
   BarChart2,
+  LogOut,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useSidebar } from '@/hooks/use-sidebar';
@@ -173,14 +174,23 @@ export function Sidebar() {
         </div>
 
         {/* User Profile Footer */}
-        <div className="flex items-center gap-2.5 pt-1">
-          <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shadow-sm ring-1 ring-slate-800">
-            {user?.displayName ? user.displayName.slice(0, 2).toUpperCase() : 'SF'}
+        <div className="flex items-center justify-between gap-2 pt-1">
+          <div className="flex items-center gap-2.5 truncate flex-1 min-w-0">
+            <div className="h-8 w-8 shrink-0 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shadow-sm ring-1 ring-slate-800">
+              {user?.displayName ? user.displayName.slice(0, 2).toUpperCase() : 'SF'}
+            </div>
+            <div className="truncate">
+              <p className="text-xs font-bold text-slate-900 truncate">{user?.displayName || 'Alex Rivers'}</p>
+              <p className="text-[11px] text-slate-500 truncate">{user?.email || 'admin@subflow.io'}</p>
+            </div>
           </div>
-          <div className="truncate flex-1">
-            <p className="text-xs font-bold text-slate-900 truncate">{user?.displayName || 'Alex Rivers'}</p>
-            <p className="text-[11px] text-slate-500 truncate">{user?.email || 'admin@subflow.io'}</p>
-          </div>
+          <Link
+            href="/login"
+            title="Switch Account / Sign In"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-200/60 transition-colors shrink-0"
+          >
+            <LogOut className="h-4 w-4" />
+          </Link>
         </div>
       </div>
     </div>
