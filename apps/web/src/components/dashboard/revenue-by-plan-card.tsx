@@ -10,7 +10,7 @@ export function RevenueByPlanCard() {
   const enterpriseBars = [38, 42, 35, 40, 37, 41, 36, 39, 43, 35, 38, 40, 36];
 
   return (
-    <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-100 shadow-[0_4px_25px_-5px_rgba(0,0,0,0.04)] flex flex-col justify-between">
+    <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] flex flex-col justify-between">
       <div>
         {/* Header row */}
         <div className="flex items-start justify-between">

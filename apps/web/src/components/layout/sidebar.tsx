@@ -105,19 +105,19 @@ export function Sidebar() {
                 className={cn(
                   'flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all group relative',
                   isActive
-                    ? 'bg-blue-50 text-blue-600 font-bold shadow-sm'
+                    ? 'bg-orange-50 text-orange-600 font-bold shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50',
                 )}
               >
                 <Icon
                   className={cn(
                     'h-4 w-4 transition-colors',
-                    isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600',
+                    isActive ? 'text-orange-600' : 'text-slate-400 group-hover:text-slate-600',
                   )}
                 />
                 <span>{item.label}</span>
                 {isActive && (
-                  <span className="absolute right-2.5 h-1.5 w-1.5 rounded-full bg-blue-600 shadow-sm" />
+                  <span className="absolute right-2.5 h-1.5 w-1.5 rounded-full bg-orange-600 shadow-sm" />
                 )}
               </Link>
             );
@@ -131,7 +131,7 @@ export function Sidebar() {
         <button
           onClick={handleRunBilling}
           disabled={runningBilling}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-3 text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-xl shadow-sm shadow-orange-500/20 active:scale-95 transition-all disabled:opacity-50"
         >
           <Zap className={cn('h-3.5 w-3.5', runningBilling && 'animate-spin')} />
           {runningBilling ? 'Processing Run...' : 'Run Billing Engine'}
@@ -149,7 +149,7 @@ export function Sidebar() {
             <span className="flex items-center gap-1">
               <ShieldCheck className="h-3 w-3 text-slate-400" /> Active Role:
             </span>
-            <span className="text-blue-600 uppercase font-bold text-[10px]">
+            <span className="text-orange-600 uppercase font-bold text-[10px]">
               {user?.role || 'admin'}
             </span>
           </div>
@@ -162,7 +162,7 @@ export function Sidebar() {
                 className={cn(
                   'text-[10px] font-bold capitalize py-1 rounded-lg transition-all',
                   user?.role === r
-                    ? 'bg-blue-600 text-white shadow-xs'
+                    ? 'bg-orange-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100',
                 )}
               >
@@ -210,7 +210,7 @@ export function Sidebar() {
           href="/dashboard"
           className={cn(
             'flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-semibold transition-colors',
-            pathname === '/dashboard' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-900',
+            pathname === '/dashboard' ? 'text-orange-600 font-bold' : 'text-slate-500 hover:text-slate-900',
           )}
         >
           <LayoutDashboard className="h-4 w-4" />
@@ -221,7 +221,7 @@ export function Sidebar() {
           href="/subscriptions"
           className={cn(
             'flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-semibold transition-colors',
-            pathname.startsWith('/subscriptions') ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-900',
+            pathname.startsWith('/subscriptions') ? 'text-orange-600 font-bold' : 'text-slate-500 hover:text-slate-900',
           )}
         >
           <Repeat className="h-4 w-4" />
@@ -232,7 +232,7 @@ export function Sidebar() {
           href="/invoices"
           className={cn(
             'flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-semibold transition-colors',
-            pathname.startsWith('/invoices') ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-900',
+            pathname.startsWith('/invoices') ? 'text-orange-600 font-bold' : 'text-slate-500 hover:text-slate-900',
           )}
         >
           <FileText className="h-4 w-4" />
@@ -243,7 +243,7 @@ export function Sidebar() {
           href="/reports"
           className={cn(
             'flex flex-col items-center gap-1 py-1 px-3 rounded-lg text-[10px] font-semibold transition-colors',
-            pathname.startsWith('/reports') ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-900',
+            pathname.startsWith('/reports') ? 'text-orange-600 font-bold' : 'text-slate-500 hover:text-slate-900',
           )}
         >
           <BarChart3 className="h-4 w-4" />

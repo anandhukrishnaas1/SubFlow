@@ -39,7 +39,7 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
+    <div className="flex min-h-screen bg-[#edeae3] text-stone-900 selection:bg-orange-600 selection:text-white">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
@@ -48,7 +48,7 @@ export default function ReportsPage() {
           {/* Header */}
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2.5">
-              <BarChart3 className="h-6 w-6 text-blue-600" />
+              <BarChart3 className="h-6 w-6 text-orange-600" />
               Financial Reports & Billing Analytics
             </h1>
             <p className="text-sm text-slate-500 mt-1">
@@ -74,7 +74,7 @@ export default function ReportsPage() {
 
             <div className="ui-card p-5">
               <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Customer Churn Rate</span>
-              <p className="text-3xl font-extrabold text-blue-600 mt-1 font-mono">0.0%</p>
+              <p className="text-3xl font-extrabold text-orange-600 mt-1 font-mono">0.0%</p>
               <p className="text-[11px] text-slate-500 mt-1 font-medium">Zero churn across active subscriptions</p>
             </div>
           </div>
@@ -99,7 +99,7 @@ export default function ReportsPage() {
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                  <Bar dataKey="billed" fill="#3b82f6" name="Invoiced Amount" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="billed" fill="#ea580c" name="Invoiced Amount" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="collected" fill="#10b981" name="Settled Payments" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

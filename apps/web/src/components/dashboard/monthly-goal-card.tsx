@@ -4,12 +4,26 @@ import React from 'react';
 import { ArrowRight, Info } from 'lucide-react';
 
 export function MonthlyGoalCard() {
-  // Generate dashed ticks for the radial semi-circle gauge
-  const totalTicks = 24;
-  const activeTicks = Math.round(totalTicks * 0.85);
+  // Generate radiating tick bars for the radial semi-circle speedometer
+  const totalTicks = 32;
+  const activeCount = Math.round(totalTicks * 0.85); // 27 active ticks
+  const cx = 100;
+  const cy = 94;
+  const rInner = 58;
+  const rOuter = 80;
+
+  const ticks = Array.from({ length: totalTicks }).map((_, i) => {
+    const angle = Math.PI - (i / (totalTicks - 1)) * Math.PI;
+    const x1 = cx + rInner * Math.cos(angle);
+    const y1 = cy - rInner * Math.sin(angle);
+    const x2 = cx + rOuter * Math.cos(angle);
+    const y2 = cy - rOuter * Math.sin(angle);
+    const isActive = i < activeCount;
+    return { x1, y1, x2, y2, isActive };
+  });
 
   return (
-    <div className="bg-gradient-to-br from-[#ea580c] via-[#f97316] to-[#c2410c] text-white rounded-3xl p-6 sm:p-7 shadow-[0_10px_35px_-5px_rgba(234,88,12,0.35)] flex flex-col justify-between">
+    <div className="bg-gradient-to-br from-[#f97316] via-[#ea580c] to-[#c2410c] text-white rounded-3xl p-6 sm:p-7 shadow-[0_12px_36px_-6px_rgba(234,88,12,0.4)] flex flex-col justify-between">
       <div>
         {/* Header */}
         <div className="flex items-center justify-between pb-2">
@@ -19,34 +33,27 @@ export function MonthlyGoalCard() {
             className="h-7 w-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
             title="View Details"
           >
-            <ArrowRight className="h-3.5 w-3.5" />
+            <ArrowRight className="h-3.5 w-3.5 -rotate-45" />
           </button>
         </div>
 
         {/* Semi-circular Speedometer Gauge */}
-        <div className="relative flex flex-col items-center justify-center pt-4 pb-2">
+        <div className="relative flex flex-col items-center justify-center pt-3 pb-2">
           {/* Radial Arc SVG */}
-          <div className="relative w-48 h-28 flex items-end justify-center overflow-hidden">
-            <svg viewBox="0 0 200 110" className="w-full h-full">
-              {/* Gauge Track Arc */}
-              <path
-                d="M 20 100 A 80 80 0 0 1 180 100"
-                fill="none"
-                stroke="rgba(255, 255, 255, 0.2)"
-                strokeWidth="10"
-                strokeLinecap="round"
-                strokeDasharray="3 7"
-              />
-              {/* Gauge Progress Arc (85%) */}
-              <path
-                d="M 20 100 A 80 80 0 0 1 180 100"
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth="12"
-                strokeLinecap="round"
-                strokeDasharray="4 7"
-                strokeDashoffset="35"
-              />
+          <div className="relative w-52 h-32 flex items-end justify-center overflow-hidden">
+            <svg viewBox="0 0 200 108" className="w-full h-full">
+              {ticks.map((t, idx) => (
+                <line
+                  key={idx}
+                  x1={t.x1}
+                  y1={t.y1}
+                  x2={t.x2}
+                  y2={t.y2}
+                  stroke={t.isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.25)'}
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                />
+              ))}
             </svg>
 
             {/* Gauge Center Text */}

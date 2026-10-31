@@ -36,7 +36,7 @@ export default function TaxesPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
+    <div className="flex min-h-screen bg-[#edeae3] text-stone-900 selection:bg-orange-600 selection:text-white">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
@@ -46,7 +46,7 @@ export default function TaxesPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2.5">
-                <Percent className="h-6 w-6 text-blue-600" />
+                <Percent className="h-6 w-6 text-orange-600" />
                 Tax Rules & Jurisdictions
               </h1>
               <p className="text-sm text-slate-500 mt-1 font-medium">
@@ -56,7 +56,7 @@ export default function TaxesPage() {
 
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-blue-600/20 transition-all self-start sm:self-auto"
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-orange-600/20 transition-all self-start sm:self-auto"
             >
               <Plus className="h-4 w-4" />
               Add Tax Rule
@@ -72,7 +72,7 @@ export default function TaxesPage() {
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                    <span className="text-xs font-bold uppercase px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
                       {t.type}
                     </span>
                     <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -95,7 +95,7 @@ export default function TaxesPage() {
                   <span className="flex items-center gap-1 text-emerald-600 font-bold">
                     <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /> Compliant
                   </span>
-                  <button className="text-blue-600 hover:text-blue-700 font-bold">Edit</button>
+                  <button className="text-orange-600 hover:text-orange-700 font-bold">Edit</button>
                 </div>
               </div>
             ))}
@@ -148,7 +148,7 @@ export default function TaxesPage() {
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm shadow-blue-600/20 transition-all"
+                      className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold shadow-sm shadow-orange-600/20 transition-all"
                     >
                       Save Tax Rate
                     </button>

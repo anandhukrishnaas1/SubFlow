@@ -84,7 +84,7 @@ export function RecentSalesCard() {
   };
 
   return (
-    <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-100 shadow-[0_4px_25px_-5px_rgba(0,0,0,0.04)]">
+    <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)]">
       {/* Table Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100">
         <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">Recent Sales</h3>

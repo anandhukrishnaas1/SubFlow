@@ -89,7 +89,7 @@ export function ChurnUpsellCards() {
               <div className="h-7 w-7 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold border-2 border-white">
                 TL
               </div>
-              <div className="h-7 w-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold border-2 border-white">
+              <div className="h-7 w-7 rounded-full bg-orange-600 text-white flex items-center justify-center text-[10px] font-bold border-2 border-white">
                 AD
               </div>
               <div className="h-7 w-7 rounded-full bg-amber-600 text-white flex items-center justify-center text-[10px] font-bold border-2 border-white">
@@ -163,7 +163,7 @@ export function ChurnUpsellCards() {
         <div>
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-bold text-slate-900 tracking-tight">Expansion Opportunities</h4>
-            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+            <span className="text-[10px] font-bold text-orange-700 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
               High Propensity
             </span>
           </div>
@@ -172,7 +172,7 @@ export function ChurnUpsellCards() {
           <div className="space-y-3 mt-4">
             <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/70">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">
+                <div className="h-8 w-8 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">
                   JS
                 </div>
                 <div>

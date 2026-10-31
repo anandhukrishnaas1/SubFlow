@@ -79,7 +79,7 @@ export default function QuotationsPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
+    <div className="flex min-h-screen bg-[#edeae3] text-stone-900 selection:bg-orange-600 selection:text-white">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
@@ -99,7 +99,7 @@ export default function QuotationsPage() {
 
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-blue-600/20 transition-all self-start sm:self-auto"
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-orange-600/20 transition-all self-start sm:self-auto"
             >
               <Plus className="h-4 w-4" />
               New Quotation
@@ -147,7 +147,7 @@ export default function QuotationsPage() {
                               q.status === 'accepted'
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                 : q.status === 'sent'
-                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                ? 'bg-orange-50 text-orange-700 border-orange-200'
                                 : 'bg-amber-50 text-amber-700 border-amber-200'
                             }`}
                           >
@@ -158,7 +158,7 @@ export default function QuotationsPage() {
                           {q.status === 'draft' && (
                             <button
                               onClick={() => sendMutation.mutate(q.id)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-bold transition-colors"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-lg text-[11px] font-bold transition-colors"
                             >
                               <Send className="h-3 w-3" /> Send
                             </button>
@@ -185,7 +185,7 @@ export default function QuotationsPage() {
                               });
                               alert(`Quotation ${q.number} converted into live active subscription!`);
                             }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-bold transition-colors"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-lg text-[11px] font-bold transition-colors"
                             title="Convert into live recurring subscription"
                           >
                             <ArrowRightCircle className="h-3 w-3" /> Convert to Sub
@@ -289,7 +289,7 @@ export default function QuotationsPage() {
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm shadow-blue-600/20 transition-all"
+                      className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold shadow-sm shadow-orange-600/20 transition-all"
                     >
                       Generate Quote
                     </button>

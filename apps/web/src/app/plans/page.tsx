@@ -47,7 +47,7 @@ export default function PlansPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
+    <div className="flex min-h-screen bg-[#edeae3] text-stone-900 selection:bg-orange-600 selection:text-white">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
@@ -57,7 +57,7 @@ export default function PlansPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2.5">
-                <Layers className="h-6 w-6 text-blue-600" />
+                <Layers className="h-6 w-6 text-orange-600" />
                 Subscription Plans & Pricing Tiers
               </h1>
               <p className="text-sm text-slate-500 mt-1 font-medium">
@@ -67,7 +67,7 @@ export default function PlansPage() {
 
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-blue-600/20 transition-all self-start sm:self-auto"
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-orange-600/20 transition-all self-start sm:self-auto"
             >
               <Plus className="h-4 w-4" />
               Create Plan
@@ -79,11 +79,11 @@ export default function PlansPage() {
             {plans.map((plan: any) => (
               <div
                 key={plan.id}
-                className="ui-card p-6 flex flex-col justify-between hover:border-blue-400 hover:shadow-md transition-all"
+                className="ui-card p-6 flex flex-col justify-between hover:border-orange-400 hover:shadow-md transition-all"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                    <span className="text-xs font-bold uppercase tracking-wider text-orange-700 bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-200">
                       {plan.billingInterval}
                     </span>
                     <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
@@ -106,12 +106,12 @@ export default function PlansPage() {
                     </p>
                     {(plan.products || []).map((prod: any, idx: number) => (
                       <div key={prod.id || idx} className="flex items-center gap-2 text-xs text-slate-700 font-medium">
-                        <Check className="h-3.5 w-3.5 text-blue-600 flex-shrink-0" />
+                        <Check className="h-3.5 w-3.5 text-orange-600 flex-shrink-0" />
                         <span>{prod.name}</span>
                       </div>
                     ))}
                     <div className="flex items-center gap-2 text-xs text-slate-700 font-medium">
-                      <Check className="h-3.5 w-3.5 text-blue-600 flex-shrink-0" />
+                      <Check className="h-3.5 w-3.5 text-orange-600 flex-shrink-0" />
                       <span>Automated recurring billing cycle</span>
                     </div>
                   </div>
@@ -119,7 +119,7 @@ export default function PlansPage() {
 
                 <div className="pt-6 mt-6 border-t border-slate-100 flex items-center justify-between">
                   <span className="text-xs text-slate-500 font-medium">Min Qty: {plan.minQuantity || 1}</span>
-                  <button className="text-xs font-bold text-blue-600 hover:text-blue-700">
+                  <button className="text-xs font-bold text-orange-600 hover:text-orange-700">
                     Configure Rules →
                   </button>
                 </div>
@@ -201,7 +201,7 @@ export default function PlansPage() {
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm shadow-blue-600/20 transition-all"
+                      className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold shadow-sm shadow-orange-600/20 transition-all"
                     >
                       Save Plan
                     </button>

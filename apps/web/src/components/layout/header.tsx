@@ -73,13 +73,13 @@ export function Header({ onOpenAiAssistant, onCreateInvoice, title }: HeaderProp
     : 0;
 
   return (
-    <header className="sticky top-0 z-30 bg-[#f4f5f8]/90 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4 border-b border-slate-200/50">
+    <header className="sticky top-0 z-30 bg-[#edeae3]/85 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4 border-b border-[#e5e2da]">
       {/* Left: Brand Mark */}
       <div className="flex items-center gap-3">
         {/* Mobile Hamburger Drawer Trigger */}
         <button
           onClick={toggleMobile}
-          className="h-9 w-9 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-600 border border-slate-200/80 shadow-2xs transition-colors"
+          className="h-9 w-9 rounded-full bg-white hover:bg-stone-100 flex items-center justify-center text-stone-700 border border-stone-200/90 shadow-2xs transition-colors"
           title="Open modules & billing workbench"
           aria-label="Open navigation menu"
         >
@@ -98,14 +98,14 @@ export function Header({ onOpenAiAssistant, onCreateInvoice, title }: HeaderProp
       </div>
 
       {/* Center: Floating Pill Navigation matching the Template */}
-      <nav className="hidden md:flex items-center bg-white/90 backdrop-blur-sm p-1.5 rounded-full border border-slate-200/80 shadow-xs">
+      <nav className="hidden md:flex items-center bg-white/90 backdrop-blur-sm p-1.5 rounded-full border border-stone-200/90 shadow-2xs">
         <Link
           href="/dashboard"
           className={cn(
             'flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all',
             pathname === '/dashboard'
-              ? 'bg-slate-900 text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900',
+              ? 'bg-[#18181b] text-white shadow-xs'
+              : 'text-stone-600 hover:text-stone-900',
           )}
         >
           <LayoutDashboard className="h-3.5 w-3.5" />
@@ -209,9 +209,9 @@ export function Header({ onOpenAiAssistant, onCreateInvoice, title }: HeaderProp
               <Link
                 href="/portal"
                 onClick={() => setMoreOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-xl"
+                className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-orange-600 hover:bg-orange-50 rounded-xl"
               >
-                <ExternalLink className="h-3.5 w-3.5 text-blue-600" /> Customer Portal
+                <ExternalLink className="h-3.5 w-3.5 text-orange-600" /> Customer Portal
               </Link>
             </div>
           )}
@@ -239,7 +239,7 @@ export function Header({ onOpenAiAssistant, onCreateInvoice, title }: HeaderProp
           >
             <Bell className="h-4 w-4" />
             {unreadCount > 0 && (
-              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
+              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-orange-600 ring-2 ring-white" />
             )}
           </button>
 
@@ -252,7 +252,7 @@ export function Header({ onOpenAiAssistant, onCreateInvoice, title }: HeaderProp
                     api.markAllNotificationsRead();
                     refetch();
                   }}
-                  className="text-[11px] text-blue-600 hover:text-blue-700 font-semibold"
+                  className="text-[11px] text-orange-600 hover:text-orange-700 font-semibold"
                 >
                   Mark all read
                 </button>

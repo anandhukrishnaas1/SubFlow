@@ -40,7 +40,7 @@ export default function DiscountsPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
+    <div className="flex min-h-screen bg-[#edeae3] text-stone-900 selection:bg-orange-600 selection:text-white">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
@@ -103,7 +103,7 @@ export default function DiscountsPage() {
                   </span>
                   <button
                     onClick={() => navigator.clipboard.writeText(d.code)}
-                    className="text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1"
+                    className="text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1"
                   >
                     <Copy className="h-3 w-3" /> Copy
                   </button>

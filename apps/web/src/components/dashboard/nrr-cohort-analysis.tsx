@@ -49,7 +49,7 @@ export function NrrCohortAnalysis() {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="appearance-none bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg pl-3 pr-7 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-600 transition-colors cursor-pointer"
+              className="appearance-none bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg pl-3 pr-7 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-600 transition-colors cursor-pointer"
             >
               <option>All filters</option>
               <option>Enterprise</option>
@@ -63,7 +63,7 @@ export function NrrCohortAnalysis() {
             <select
               value={timeline}
               onChange={(e) => setTimeline(e.target.value)}
-              className="appearance-none bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg pl-3 pr-7 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-600 transition-colors cursor-pointer"
+              className="appearance-none bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg pl-3 pr-7 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-600 transition-colors cursor-pointer"
             >
               <option>All months</option>
               <option>Last 6 Months</option>

@@ -105,14 +105,14 @@ export default function SubscriptionsPage() {
       case 'cancelled':
         return 'bg-rose-50 text-rose-700 border-rose-200';
       case 'confirmed':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
+        return 'bg-orange-50 text-orange-700 border-orange-200';
       default:
         return 'bg-slate-50 text-slate-700 border-slate-200';
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
+    <div className="flex min-h-screen bg-[#edeae3] text-stone-900 selection:bg-orange-600 selection:text-white">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
@@ -122,7 +122,7 @@ export default function SubscriptionsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2.5">
-                <Repeat className="h-6 w-6 text-blue-600" />
+                <Repeat className="h-6 w-6 text-orange-600" />
                 Subscription Lifecycle Management
               </h1>
               <p className="text-sm text-slate-500 mt-1">
@@ -132,7 +132,7 @@ export default function SubscriptionsPage() {
 
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-blue-600/20 transition-all self-start sm:self-auto"
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-orange-600/20 transition-all self-start sm:self-auto"
             >
               <Plus className="h-4 w-4" />
               New Subscription
@@ -148,7 +148,7 @@ export default function SubscriptionsPage() {
                 onClick={() => setFilterStatus(st)}
                 className={`text-xs px-3 py-1 rounded-lg capitalize font-bold transition-all ${
                   filterStatus === st
-                    ? 'bg-blue-600 text-white shadow-xs'
+                    ? 'bg-orange-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
@@ -335,7 +335,7 @@ export default function SubscriptionsPage() {
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm shadow-blue-600/20 transition-all"
+                      className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold shadow-sm shadow-orange-600/20 transition-all"
                     >
                       Create & Activate
                     </button>

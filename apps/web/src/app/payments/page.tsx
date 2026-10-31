@@ -53,7 +53,7 @@ export default function PaymentsPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
+    <div className="flex min-h-screen bg-[#edeae3] text-stone-900 selection:bg-orange-600 selection:text-white">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
@@ -108,7 +108,7 @@ export default function PaymentsPage() {
                         <td className="py-3.5 px-4 font-mono font-bold text-slate-700">
                           {pay.transactionRef || pay.id}
                         </td>
-                        <td className="py-3.5 px-4 font-mono font-bold text-blue-600">
+                        <td className="py-3.5 px-4 font-mono font-bold text-orange-600">
                           {pay.invoiceNumber || 'INV-001'}
                         </td>
                         <td className="py-3.5 px-4 font-bold text-slate-900">

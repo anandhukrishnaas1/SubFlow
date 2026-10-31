@@ -79,7 +79,7 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
             'Upcoming renewal queue is clear with 24 accounts eligible for upgrade',
           ],
           tag: 'Retention',
-          tagColor: 'text-blue-700 bg-blue-50 border-blue-200',
+          tagColor: 'text-orange-700 bg-orange-50 border-orange-200',
         },
       ],
       timestamp: 'Just now',
@@ -173,7 +173,7 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
       {/* Header */}
       <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
+          <div className="h-8 w-8 rounded-xl bg-orange-600 text-white flex items-center justify-center shadow-md shadow-orange-500/20">
             <BarChart2 className="h-4 w-4" />
           </div>
           <div>
@@ -203,7 +203,7 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
             onClick={() => {
               setInput(chip);
             }}
-            className="whitespace-nowrap px-2.5 py-1 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 text-[11px] font-medium border border-slate-200 transition-colors"
+            className="whitespace-nowrap px-2.5 py-1 rounded-full bg-slate-100 hover:bg-orange-50 hover:text-orange-600 text-slate-600 text-[11px] font-medium border border-slate-200 transition-colors"
           >
             {chip}
           </button>
@@ -216,23 +216,23 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
           <div key={m.id} className="space-y-1.5">
             {m.sender === 'user' ? (
               <div className="flex items-start gap-2.5 justify-end">
-                <div className="bg-blue-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-xs font-medium max-w-[85%] shadow-sm">
+                <div className="bg-orange-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-xs font-medium max-w-[85%] shadow-sm">
                   {m.text}
                 </div>
-                <div className="h-7 w-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold shrink-0">
+                <div className="h-7 w-7 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-[10px] font-bold shrink-0">
                   You
                 </div>
               </div>
             ) : (
               <div className="flex items-start gap-2.5">
-                <div className="h-7 w-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm">
+                <div className="h-7 w-7 rounded-full bg-orange-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm">
                   <Activity className="h-3.5 w-3.5" />
                 </div>
                 <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-4 text-xs max-w-[90%] shadow-sm space-y-3">
                   {m.title && (
                     <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                       <span className="font-extrabold text-slate-900 text-sm tracking-tight">{m.title}</span>
-                      <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                      <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
                         SubFlow Telemetry
                       </span>
                     </div>
@@ -251,7 +251,7 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
                       <ul className="space-y-1 pl-1 text-slate-600 text-[11px] leading-relaxed">
                         {sec.points.map((pt, j) => (
                           <li key={j} className="flex items-start gap-1.5">
-                            <span className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
                             <span>{pt}</span>
                           </li>
                         ))}
@@ -291,12 +291,12 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask a question about churn, revenue, renewals..."
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-600 focus:ring-1 focus:ring-orange-600 transition-all"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim()}
-            className="absolute right-1.5 h-7 w-7 rounded-lg bg-blue-600 disabled:opacity-40 hover:bg-blue-700 text-white flex items-center justify-center transition-all shadow-sm"
+            className="absolute right-1.5 h-7 w-7 rounded-lg bg-orange-600 disabled:opacity-40 hover:bg-orange-700 text-white flex items-center justify-center transition-all shadow-sm"
           >
             <ArrowUp className="h-4 w-4" />
           </button>

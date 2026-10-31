@@ -28,7 +28,7 @@ export function FinancialReportCard() {
                 <span className="font-mono font-medium text-slate-900">$142,600</span>
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-blue-600 h-full rounded-full" style={{ width: '68%' }} />
+                <div className="bg-orange-600 h-full rounded-full" style={{ width: '68%' }} />
               </div>
 
               <div className="flex items-center justify-between text-slate-600 pt-1">
@@ -36,7 +36,7 @@ export function FinancialReportCard() {
                 <span className="font-mono font-medium text-slate-900">$51,430</span>
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-sky-400 h-full rounded-full" style={{ width: '24%' }} />
+                <div className="bg-amber-500 h-full rounded-full" style={{ width: '24%' }} />
               </div>
 
               <div className="flex items-center justify-between text-slate-600 pt-1">
@@ -44,7 +44,7 @@ export function FinancialReportCard() {
                 <span className="font-mono font-medium text-slate-900">$21,000</span>
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-cyan-500 h-full rounded-full" style={{ width: '12%' }} />
+                <div className="bg-orange-400 h-full rounded-full" style={{ width: '12%' }} />
               </div>
             </div>
           </div>

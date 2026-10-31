@@ -41,7 +41,7 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
+    <div className="flex min-h-screen bg-[#edeae3] text-stone-900 selection:bg-orange-600 selection:text-white">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
@@ -51,7 +51,7 @@ export default function ProductsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2.5">
-                <Package className="h-6 w-6 text-blue-600" />
+                <Package className="h-6 w-6 text-orange-600" />
                 Product Catalog & Variants
               </h1>
               <p className="text-sm text-slate-500 mt-1">
@@ -61,7 +61,7 @@ export default function ProductsPage() {
 
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-blue-600/20 transition-all self-start sm:self-auto"
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-orange-600/20 transition-all self-start sm:self-auto"
             >
               <Plus className="h-4 w-4" />
               Add Product
@@ -79,7 +79,7 @@ export default function ProductsPage() {
                 >
                   <div>
                     <div className="flex items-start justify-between">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-orange-50 text-orange-700 border border-orange-200">
                         {p.type}
                       </span>
                       <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -125,7 +125,7 @@ export default function ProductsPage() {
                     <span className="text-emerald-700 font-bold flex items-center gap-1">
                       <CheckCircle className="h-3.5 w-3.5 text-emerald-600" /> Active in catalog
                     </span>
-                    <button className="text-blue-600 hover:text-blue-700 font-bold">Edit</button>
+                    <button className="text-orange-600 hover:text-orange-700 font-bold">Edit</button>
                   </div>
                 </div>
               );
@@ -217,7 +217,7 @@ export default function ProductsPage() {
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm shadow-blue-600/20 transition-all"
+                      className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold shadow-sm shadow-orange-600/20 transition-all"
                     >
                       Save Product
                     </button>

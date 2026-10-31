@@ -4,17 +4,22 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 36 25% 94%;
+    --foreground: 20 14% 4%;
   }
 
   * {
-    border-color: #e2e8f0;
+    border-color: #e5e2da;
+  }
+
+  ::selection {
+    background-color: #ea580c;
+    color: #ffffff;
   }
 
   body {
-    background-color: #f8fafc;
-    color: #0f172a;
+    background-color: #edeae3;
+    color: #1c1917;
     font-feature-settings: "rlig" 1, "calt" 1;
     overflow-x: hidden;
   }
@@ -27,36 +32,36 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #f5f3ee;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d6d3cb;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #b8b4ab;
 }
 
 /* Clean Card & Surface Utilities */
 .ui-card {
   background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 1.25rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02), 0 4px 16px -2px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e5e2da;
+  border-radius: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02), 0 6px 20px -4px rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease-in-out;
 }
 
 .ui-card:hover {
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06);
-  border-color: #cbd5e1;
+  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.06);
+  border-color: #dedbd2;
 }
 
 .ui-card-sm {
   background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 1rem;
+  border: 1px solid #e5e2da;
+  border-radius: 1.25rem;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
 }
 

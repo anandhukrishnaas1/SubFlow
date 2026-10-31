@@ -70,7 +70,7 @@ export default function InvoicesPage() {
       case 'paid':
         return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'confirmed':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
+        return 'bg-orange-50 text-orange-700 border-orange-200';
       case 'overdue':
         return 'bg-rose-50 text-rose-700 border-rose-200';
       default:
@@ -79,7 +79,7 @@ export default function InvoicesPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
+    <div className="flex min-h-screen bg-[#edeae3] text-stone-900 selection:bg-orange-600 selection:text-white">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
@@ -89,7 +89,7 @@ export default function InvoicesPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2.5">
-                <FileText className="h-6 w-6 text-blue-600" />
+                <FileText className="h-6 w-6 text-orange-600" />
                 Invoices & Billing Accounts
               </h1>
               <p className="text-sm text-slate-500 mt-1">
@@ -107,7 +107,7 @@ export default function InvoicesPage() {
                 onClick={() => setFilterStatus(st)}
                 className={`text-xs px-3 py-1 rounded-lg capitalize font-bold transition-all ${
                   filterStatus === st
-                    ? 'bg-blue-600 text-white shadow-xs'
+                    ? 'bg-orange-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
@@ -182,14 +182,14 @@ export default function InvoicesPage() {
                             disabled={downloadingId === inv.id}
                             className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded text-[11px] font-medium transition-colors"
                           >
-                            <Download className="h-3 w-3 text-blue-400" />
+                            <Download className="h-3 w-3 text-orange-400" />
                             {downloadingId === inv.id ? 'Generating...' : 'PDF'}
                           </button>
 
                           {inv.status === 'draft' && (
                             <button
                               onClick={() => confirmMutation.mutate(inv.id)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded text-[11px] font-medium transition-colors"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-600/20 hover:bg-orange-600/30 text-orange-600 border border-orange-500/30 rounded text-[11px] font-medium transition-colors"
                             >
                               <CheckCircle2 className="h-3 w-3" />
                               Confirm
