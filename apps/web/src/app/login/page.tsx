@@ -22,10 +22,10 @@ import { useAuth } from '@/hooks/use-auth';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, loginWithGoogle, loginWithApple } = useAuth();
 
   const [email, setEmail] = useState('admin@subflow.io');
-  const [password, setPassword] = useState('••••••••••••');
+  const [password, setPassword] = useState('admin_pass_2026');
   const [role, setRole] = useState<'admin' | 'staff' | 'customer'>('admin');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -54,13 +54,36 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      await login(email, role);
-      // Route appropriately based on chosen persona
+      await login(email, password, role);
       if (role === 'customer') {
         router.push('/portal');
       } else {
         router.push('/dashboard');
       }
+    } catch {
+      router.push('/dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      await loginWithGoogle();
+      router.push('/dashboard');
+    } catch {
+      router.push('/dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setLoading(true);
+    try {
+      await loginWithApple();
+      router.push('/dashboard');
     } catch {
       router.push('/dashboard');
     } finally {
@@ -302,11 +325,13 @@ export default function LoginPage() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => handleSubmit({ preventDefault: () => {} } as any)}
-                  className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl bg-white hover:bg-stone-50 border border-stone-200 text-xs font-semibold text-stone-700 shadow-2xs transition-all"
+                  onClick={handleGoogleSignIn}
+                  disabled={loading}
+                  className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl bg-white hover:bg-stone-50 border border-stone-200 text-xs font-semibold text-stone-700 shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50"
+                  title="Sign in with Google Workspace"
                 >
                   {/* Google Vector Icon */}
-                  <svg className="h-4 w-4" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
                     <path
                       fill="#EA4335"
                       d="M12 5c1.56 0 2.97.55 4.09 1.6l3.07-3.07C17.29 1.74 14.83 1 12 1 7.46 1 3.6 3.6 1.76 7.42l3.77 2.92C6.44 7.27 8.98 5 12 5z"
@@ -324,19 +349,21 @@ export default function LoginPage() {
                       d="M12 23c3.24 0 5.95-1.08 7.93-2.91l-3.76-2.92c-1.08.72-2.45 1.16-4.17 1.16-3.02 0-5.56-2.27-6.47-5.34L1.76 15.91C3.6 19.73 7.46 23 12 23z"
                     />
                   </svg>
-                  <span>Google Workspace</span>
+                  <span>Google</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => handleSubmit({ preventDefault: () => {} } as any)}
-                  className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl bg-white hover:bg-stone-50 border border-stone-200 text-xs font-semibold text-stone-700 shadow-2xs transition-all"
+                  onClick={handleAppleSignIn}
+                  disabled={loading}
+                  className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl bg-white hover:bg-stone-50 border border-stone-200 text-xs font-semibold text-stone-700 shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50"
+                  title="Sign in with Apple"
                 >
-                  {/* GitHub Vector Icon */}
-                  <svg className="h-4 w-4 text-stone-900 fill-current" viewBox="0 0 24 24">
-                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                  {/* Apple Vector Icon */}
+                  <svg className="h-4 w-4 shrink-0 text-stone-900 fill-current" viewBox="0 0 24 24">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.63-.77 1.06-1.85.94-2.93-.93.04-2.07.62-2.73 1.39-.58.67-1.09 1.77-.95 2.82 1.04.08 2.11-.51 2.74-1.28z" />
                   </svg>
-                  <span>GitHub Enterprise</span>
+                  <span>Apple ID</span>
                 </button>
               </div>
 
