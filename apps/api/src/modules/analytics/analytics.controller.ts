@@ -27,6 +27,12 @@ export class AnalyticsController {
     return this.analyticsService.getSubscriptionBreakdown();
   }
 
+  @Get('revenue-leakage')
+  @Roles(UserRole.ADMIN, UserRole.STAFF)
+  async getRevenueLeakage() {
+    return this.analyticsService.getRevenueLeakageReport();
+  }
+
   @Post('refresh')
   @Roles(UserRole.ADMIN)
   async refresh() {

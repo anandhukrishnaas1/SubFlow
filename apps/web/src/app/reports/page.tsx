@@ -6,7 +6,7 @@ import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
-import { BarChart3, TrendingUp, DollarSign, Users, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -17,6 +17,7 @@ import {
   CartesianGrid,
   Legend,
 } from 'recharts';
+import { RevenueLeakageCard } from '@/components/dashboard/revenue-leakage-card';
 
 export default function ReportsPage() {
   const { data: kpis = {} } = useQuery({
@@ -29,14 +30,17 @@ export default function ReportsPage() {
     queryFn: () => api.getRevenueTrends(),
   });
 
-  const comparisonData = trends.length > 0 ? trends : [
-    { month: 'Jun', billed: 500, collected: 480 },
-    { month: 'Jul', billed: 750, collected: 710 },
-    { month: 'Aug', billed: 1050, collected: 990 },
-    { month: 'Sep', billed: 1250, collected: 1200 },
-    { month: 'Oct', billed: 1550, collected: 1490 },
-    { month: 'Nov', billed: 180, collected: Number(kpis.totalRevenue) || 93.6 },
-  ];
+  const comparisonData =
+    trends.length > 0
+      ? trends
+      : [
+          { month: 'Jun', billed: 500, collected: 480 },
+          { month: 'Jul', billed: 750, collected: 710 },
+          { month: 'Aug', billed: 1050, collected: 990 },
+          { month: 'Sep', billed: 1250, collected: 1200 },
+          { month: 'Oct', billed: 1550, collected: 1490 },
+          { month: 'Nov', billed: 180, collected: Number(kpis.totalRevenue) || 93.6 },
+        ];
 
   return (
     <div className="flex min-h-screen bg-[#edeae3] text-stone-900 selection:bg-orange-600 selection:text-white">
@@ -56,33 +60,52 @@ export default function ReportsPage() {
             </p>
           </div>
 
+          {/* Revenue Leakage & Churn Recovery Card */}
+          <RevenueLeakageCard />
+
           {/* Metric Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             <div className="ui-card p-5">
-              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Net Collection Rate</span>
+              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">
+                Net Collection Rate
+              </span>
               <p className="text-3xl font-extrabold text-emerald-600 mt-1 font-mono">98.4%</p>
-              <p className="text-[11px] text-slate-500 mt-1 font-medium">Payments collected vs invoices billed</p>
+              <p className="text-[11px] text-slate-500 mt-1 font-medium">
+                Payments collected vs invoices billed
+              </p>
             </div>
 
             <div className="ui-card p-5">
-              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Average Revenue Per User (ARPU)</span>
+              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">
+                Average Revenue Per User (ARPU)
+              </span>
               <p className="text-3xl font-extrabold text-slate-900 mt-1 font-mono">
                 {formatCurrency(kpis.mrr ? kpis.mrr / (kpis.totalCustomers || 1) : 40.41)}
               </p>
-              <p className="text-[11px] text-slate-500 mt-1 font-medium">Per active account each month</p>
+              <p className="text-[11px] text-slate-500 mt-1 font-medium">
+                Per active account each month
+              </p>
             </div>
 
             <div className="ui-card p-5">
-              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Customer Churn Rate</span>
+              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">
+                Customer Churn Rate
+              </span>
               <p className="text-3xl font-extrabold text-orange-600 mt-1 font-mono">0.0%</p>
-              <p className="text-[11px] text-slate-500 mt-1 font-medium">Zero churn across active subscriptions</p>
+              <p className="text-[11px] text-slate-500 mt-1 font-medium">
+                Zero churn across active subscriptions
+              </p>
             </div>
           </div>
 
           {/* Billed vs Collected Bar Chart */}
           <div className="ui-card p-6">
-            <h3 className="text-base font-bold text-slate-900 mb-1">Billing vs Realized Collection</h3>
-            <p className="text-xs text-slate-500 mb-6 font-medium">Comparison of total invoice receivables against settled payments</p>
+            <h3 className="text-base font-bold text-slate-900 mb-1">
+              Billing vs Realized Collection
+            </h3>
+            <p className="text-xs text-slate-500 mb-6 font-medium">
+              Comparison of total invoice receivables against settled payments
+            </p>
 
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">

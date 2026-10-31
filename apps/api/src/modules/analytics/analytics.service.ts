@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { FirebaseService } from '../../firebase/firebase.service';
-import { SubscriptionStatus, InvoiceStatus, UserRole } from '@subflow/shared';
+import { SubscriptionStatus, InvoiceStatus, QuotationStatus, UserRole } from '@subflow/shared';
 
 @Injectable()
 export class AnalyticsService {
@@ -160,5 +160,87 @@ export class AnalyticsService {
     });
 
     return { statusCounts, intervalCounts };
+  }
+
+  async getRevenueLeakageReport(): Promise<any> {
+    const db = this.firebase.getFirestore();
+    const now = new Date();
+
+    const [subsSnap, invsSnap, quotesSnap] = await Promise.all([
+      db.collection('subscriptions').get(),
+      db.collection('invoices').get(),
+      db.collection('quotations').get(),
+    ]);
+
+    let churnLossARR = 0;
+    const pausedOrCancelledSubs: any[] = [];
+
+    subsSnap.docs.forEach((doc) => {
+      const data = doc.data();
+      if (data.status === SubscriptionStatus.CANCELLED || data.status === SubscriptionStatus.PAUSED) {
+        const total = Number(data.total) || 0;
+        let monthly = total;
+        if (data.billingInterval === 'yearly') monthly = total / 12;
+        else if (data.billingInterval === 'weekly') monthly = total * 4.33;
+        else if (data.billingInterval === 'daily') monthly = total * 30;
+
+        churnLossARR += monthly * 12;
+        pausedOrCancelledSubs.push({
+          id: doc.id,
+          number: data.number,
+          customerName: data.customerName,
+          status: data.status,
+          arrLoss: monthly * 12,
+        });
+      }
+    });
+
+    let overdueReceivablesTotal = 0;
+    const overdueInvoicesList: any[] = [];
+    invsSnap.docs.forEach((doc) => {
+      const data = doc.data();
+      if (data.dueDate && new Date(data.dueDate) < now && data.status === InvoiceStatus.CONFIRMED) {
+        const out = Number(data.outstandingAmount) || 0;
+        overdueReceivablesTotal += out;
+        overdueInvoicesList.push({
+          id: doc.id,
+          number: data.number,
+          customerName: data.customerName,
+          outstandingAmount: out,
+          dueDate: data.dueDate,
+        });
+      }
+    });
+
+    let expiringQuotesTotal = 0;
+    const expiringQuotesList: any[] = [];
+    quotesSnap.docs.forEach((doc) => {
+      const data = doc.data();
+      if (data.status === QuotationStatus.SENT || data.status === QuotationStatus.DRAFT) {
+        expiringQuotesTotal += Number(data.total) || 0;
+        expiringQuotesList.push({
+          id: doc.id,
+          number: data.number,
+          customerName: data.customerName,
+          total: data.total,
+        });
+      }
+    });
+
+    const totalLeakage = Math.round((churnLossARR + overdueReceivablesTotal + expiringQuotesTotal) * 100) / 100;
+
+    return {
+      totalLeakage,
+      metrics: {
+        churnLossARR: Math.round(churnLossARR * 100) / 100,
+        overdueReceivables: Math.round(overdueReceivablesTotal * 100) / 100,
+        pendingQuotes: Math.round(expiringQuotesTotal * 100) / 100,
+      },
+      items: {
+        pausedOrCancelledSubs,
+        overdueInvoices: overdueInvoicesList,
+        pendingQuotes: expiringQuotesList,
+      },
+    };
   }
 }

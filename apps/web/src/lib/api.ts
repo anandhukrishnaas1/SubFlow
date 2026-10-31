@@ -264,7 +264,6 @@ async function fetchFromApi(endpoint: string, options: RequestInit = {}) {
     }
     return await res.json();
   } catch (err) {
-    // Graceful fallback to demoStore if backend server is not running
     console.info(`[SubFlow Client] Backend not reachable on ${endpoint}, serving from client cache:`, err);
     return handleFallback(endpoint, options);
   }
@@ -293,6 +292,21 @@ function handleFallback(endpoint: string, options: RequestInit = {}): any {
         paused: demoStore.subscriptions.filter((s: any) => s.status === 'paused').length,
         confirmed: demoStore.subscriptions.filter((s: any) => s.status === 'confirmed').length,
         cancelled: demoStore.subscriptions.filter((s: any) => s.status === 'cancelled').length,
+      },
+    };
+  }
+  if (path === '/analytics/revenue-leakage') {
+    return {
+      totalLeakage: 14250,
+      metrics: {
+        churnLossARR: 8400,
+        overdueReceivables: 3850,
+        pendingQuotes: 2000,
+      },
+      items: {
+        pausedOrCancelledSubs: [],
+        overdueInvoices: demoStore.invoices.filter((i: any) => i.status === 'confirmed'),
+        pendingQuotes: demoStore.quotations,
       },
     };
   }
@@ -623,6 +637,7 @@ export const api = {
   getKpis: () => fetchFromApi('/analytics/kpis'),
   getRevenueTrends: () => fetchFromApi('/analytics/revenue-trends'),
   getSubscriptionBreakdown: () => fetchFromApi('/analytics/subscription-breakdown'),
+  getRevenueLeakage: () => fetchFromApi('/analytics/revenue-leakage'),
 
   // Products
   getProducts: (status?: string) => fetchFromApi(`/products${status ? `?status=${status}` : ''}`),
