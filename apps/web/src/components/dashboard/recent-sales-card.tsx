@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, ChevronDown, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Search, Filter, ChevronDown, Check, AlertCircle } from 'lucide-react';
 import { useCurrency } from '@/hooks/use-currency';
 
 interface SaleItem {
@@ -101,23 +101,27 @@ export function RecentSalesCard() {
     switch (status) {
       case 'Paid':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold text-emerald-800 bg-emerald-50/90 border border-emerald-400 shadow-2xs transition-all">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-900">
             <span>Paid</span>
+            <Check className="h-3.5 w-3.5 text-blue-500 stroke-[2.5] shrink-0" />
           </span>
         );
       case 'Pending':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold text-amber-800 bg-amber-50/90 border border-amber-400 shadow-2xs transition-all">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0 animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-stone-500">
             <span>Pending</span>
+            <span className="inline-flex items-center gap-0.5 opacity-40 shrink-0">
+              <span className="h-1 w-1 rounded-full bg-stone-500" />
+              <span className="h-1 w-1 rounded-full bg-stone-500" />
+              <span className="h-1 w-1 rounded-full bg-stone-500" />
+            </span>
           </span>
         );
       case 'Overdue':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold text-rose-800 bg-rose-50/90 border border-rose-400 shadow-2xs transition-all">
-            <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600">
             <span>Overdue</span>
+            <AlertCircle className="h-3.5 w-3.5 text-rose-500 shrink-0" />
           </span>
         );
     }
@@ -214,20 +218,24 @@ export function RecentSalesCard() {
                     setStatusFilter('Paid');
                     setFilterMenuOpen(false);
                   }}
-                  className="w-full text-left px-3 py-1.5 text-xs font-bold rounded-xl text-emerald-700 hover:bg-emerald-50 transition-colors flex items-center justify-between"
+                  className="w-full text-left px-3 py-1.5 text-xs font-bold rounded-xl text-stone-800 hover:bg-stone-50 transition-colors flex items-center justify-between"
                 >
                   <span>Paid</span>
-                  <CheckCircle2 className="h-3 w-3" />
+                  <Check className="h-3.5 w-3.5 text-blue-500 stroke-[2.5]" />
                 </button>
                 <button
                   onClick={() => {
                     setStatusFilter('Pending');
                     setFilterMenuOpen(false);
                   }}
-                  className="w-full text-left px-3 py-1.5 text-xs font-bold rounded-xl text-amber-700 hover:bg-amber-50 transition-colors flex items-center justify-between"
+                  className="w-full text-left px-3 py-1.5 text-xs font-bold rounded-xl text-stone-600 hover:bg-stone-50 transition-colors flex items-center justify-between"
                 >
                   <span>Pending</span>
-                  <Clock className="h-3 w-3" />
+                  <span className="inline-flex items-center gap-0.5 opacity-40">
+                    <span className="h-1 w-1 rounded-full bg-stone-500" />
+                    <span className="h-1 w-1 rounded-full bg-stone-500" />
+                    <span className="h-1 w-1 rounded-full bg-stone-500" />
+                  </span>
                 </button>
               </div>
             )}
