@@ -16,6 +16,7 @@ import { FirebaseAuthGuard } from '../../common/guards/firebase-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
+import { assertCustomerOwnsResource } from '../../common/guards/customer-resource.guard';
 import { UserRole } from '@subflow/shared';
 
 @Controller('invoices')
@@ -40,13 +41,23 @@ export class InvoiceController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.invoiceService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const invoice = await this.invoiceService.findOne(id);
+    assertCustomerOwnsResource(user, invoice, 'Invoice');
+    return invoice;
   }
 
   @Get(':id/pdf')
-  async downloadPdf(@Param('id') id: string, @Res() res: Response) {
+  async downloadPdf(
+    @Param('id') id: string,
+    @Res() res: Response,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     const invoice = await this.invoiceService.findOne(id);
+    assertCustomerOwnsResource(user, invoice, 'Invoice');
     const pdfBuffer = await this.pdfService.generateInvoicePdf(invoice, invoice.items);
 
     res.set({

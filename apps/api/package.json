@@ -8,6 +8,7 @@
     "start": "nest start",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "test": "node --require ts-node/register --test src/common/guards/firebase-auth.guard.spec.ts src/common/guards/security-regression.spec.ts src/common/request-context.spec.ts src/modules/analytics/analytics.calculations.spec.ts src/modules/analytics/analytics.service.spec.ts src/modules/payment/payment.service.spec.ts",
     "seed": "ts-node src/seed/index.ts"
   },
   "dependencies": {

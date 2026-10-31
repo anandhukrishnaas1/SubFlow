@@ -226,13 +226,25 @@ export class MockFirestore {
   }
 
   async runTransaction(updateFunction: (tx: any) => Promise<any>): Promise<any> {
-    const tx = {
+    const writes: Array<() => Promise<void>> = [];
+    const tx: any = {
       get: (ref: any) => ref.get(),
-      set: (ref: any, data: any, opts?: any) => ref.set(data, opts),
-      update: (ref: any, data: any) => ref.update(data),
-      delete: (ref: any) => ref.delete(),
+      set: (ref: any, data: any, opts?: any) => {
+        writes.push(() => ref.set(data, opts));
+        return tx;
+      },
+      update: (ref: any, data: any) => {
+        writes.push(() => ref.update(data));
+        return tx;
+      },
+      delete: (ref: any) => {
+        writes.push(() => ref.delete());
+        return tx;
+      },
     };
-    return updateFunction(tx);
+    const result = await updateFunction(tx);
+    for (const write of writes) await write();
+    return result;
   }
 
   private seedDefaults() {
@@ -242,6 +254,7 @@ export class MockFirestore {
     const users = [
       {
         id: 'cust_acme_corp',
+        dataOrigin: 'SYNTHETIC',
         uid: 'cust_acme_corp',
         email: 'finance@acmecorp.com',
         displayName: 'Acme Corporation',
@@ -257,6 +270,7 @@ export class MockFirestore {
       },
       {
         id: 'cust_techstart_inc',
+        dataOrigin: 'SYNTHETIC',
         uid: 'cust_techstart_inc',
         email: 'billing@techstart.io',
         displayName: 'TechStart Inc',
@@ -272,6 +286,7 @@ export class MockFirestore {
       },
       {
         id: 'demo_admin_001',
+        dataOrigin: 'SYNTHETIC',
         uid: 'demo_admin_001',
         email: 'admin@subflow.io',
         displayName: 'Alex Rivers (Admin)',
@@ -280,6 +295,7 @@ export class MockFirestore {
       },
       {
         id: 'demo_staff_001',
+        dataOrigin: 'SYNTHETIC',
         uid: 'demo_staff_001',
         email: 'staff@subflow.io',
         displayName: 'Jordan Lee (Billing Ops)',
@@ -375,6 +391,7 @@ export class MockFirestore {
     const subscriptions = [
       {
         id: 'sub_acme_pro',
+        dataOrigin: 'SYNTHETIC',
         number: 'SUB-20261031-1001',
         customerId: 'cust_acme_corp',
         customerName: 'Acme Corporation',
@@ -397,6 +414,7 @@ export class MockFirestore {
       },
       {
         id: 'sub_techstart_starter',
+        dataOrigin: 'SYNTHETIC',
         number: 'SUB-20261031-1002',
         customerId: 'cust_techstart_inc',
         customerName: 'TechStart Inc',
@@ -426,6 +444,7 @@ export class MockFirestore {
     const invoices = [
       {
         id: 'inv_acme_oct',
+        dataOrigin: 'SYNTHETIC',
         number: 'INV-20261031-0001',
         subscriptionId: 'sub_acme_pro',
         subscriptionNumber: 'SUB-20261031-1001',
@@ -449,6 +468,7 @@ export class MockFirestore {
       },
       {
         id: 'inv_techstart_oct',
+        dataOrigin: 'SYNTHETIC',
         number: 'INV-20261031-0002',
         subscriptionId: 'sub_techstart_starter',
         subscriptionNumber: 'SUB-20261031-1002',
@@ -479,6 +499,7 @@ export class MockFirestore {
     const payments = [
       {
         id: 'pay_acme_001',
+        dataOrigin: 'SYNTHETIC',
         invoiceId: 'inv_acme_oct',
         invoiceNumber: 'INV-20261031-0001',
         customerName: 'Acme Corporation',

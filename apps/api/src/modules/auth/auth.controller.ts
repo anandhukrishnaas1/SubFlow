@@ -6,12 +6,46 @@ import {
   UseGuards,
   Param,
 } from '@nestjs/common';
+import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 import { AuthService } from './auth.service';
 import { FirebaseAuthGuard } from '../../common/guards/firebase-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 import { UserRole } from '@subflow/shared';
+import { Throttle } from '@nestjs/throttler';
+
+class RegisterUserDto {
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @MinLength(12)
+  password!: string;
+
+  @IsString()
+  @MinLength(1)
+  displayName!: string;
+
+  @IsOptional()
+  @IsString()
+  company?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+}
+
+class CreateUserDto extends RegisterUserDto {
+  @IsOptional()
+  @IsEnum(UserRole)
+  role?: UserRole;
+}
+
+class SetUserRoleDto {
+  @IsEnum(UserRole)
+  role!: UserRole;
+}
 
 @Controller('auth')
 export class AuthController {
@@ -20,15 +54,15 @@ export class AuthController {
   @Post('users')
   @UseGuards(FirebaseAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async createUser(@Body() dto: any) {
+  async createUser(@Body() dto: CreateUserDto) {
     return this.authService.createUser(dto);
   }
 
   @Post('users/:uid/role')
   @UseGuards(FirebaseAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async setRole(@Param('uid') uid: string, @Body('role') role: string) {
-    return this.authService.setRole(uid, role);
+  async setRole(@Param('uid') uid: string, @Body() dto: SetUserRoleDto) {
+    return this.authService.setRole(uid, dto.role);
   }
 
   @Get('me')
@@ -37,12 +71,13 @@ export class AuthController {
     return this.authService.getProfile(user.uid);
   }
 
-  // Public endpoint for first-time admin bootstrap or customer registration
+  // Public registration can create customer accounts only.
   @Post('register')
-  async register(@Body() dto: any) {
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  async register(@Body() dto: RegisterUserDto) {
     return this.authService.createUser({
       ...dto,
-      role: dto.role || UserRole.CUSTOMER,
+      role: UserRole.CUSTOMER,
     });
   }
 }

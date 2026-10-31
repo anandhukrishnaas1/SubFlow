@@ -13,6 +13,7 @@ import { FirebaseAuthGuard } from '../../common/guards/firebase-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
+import { assertCustomerOwnsResource } from '../../common/guards/customer-resource.guard';
 import { UserRole, SubscriptionStatus } from '@subflow/shared';
 
 @Controller('subscriptions')
@@ -34,12 +35,22 @@ export class SubscriptionController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.subscriptionService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const subscription = await this.subscriptionService.findOne(id);
+    assertCustomerOwnsResource(user, subscription, 'Subscription');
+    return subscription;
   }
 
   @Get(':id/activities')
-  async getActivities(@Param('id') id: string) {
+  async getActivities(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const subscription = await this.subscriptionService.findOne(id);
+    assertCustomerOwnsResource(user, subscription, 'Subscription');
     return this.subscriptionService.getActivities(id);
   }
 
@@ -132,9 +143,12 @@ export class SubscriptionController {
   async cancel(
     @Param('id') id: string,
     @Body('reason') reason: string,
+    @CurrentUser() user: AuthenticatedUser,
     @CurrentUser('uid') userId: string,
     @CurrentUser('name') userName: string,
   ) {
+    const subscription = await this.subscriptionService.findOne(id);
+    assertCustomerOwnsResource(user, subscription, 'Subscription');
     return this.subscriptionService.setStatus(
       id,
       SubscriptionStatus.CANCELLED,

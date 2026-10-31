@@ -29,6 +29,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useSidebar } from '@/hooks/use-sidebar';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
 
 interface HeaderProps {
   onOpenAiAssistant?: () => void;
@@ -65,6 +66,12 @@ export function Header({ onOpenAiAssistant, title }: HeaderProps) {
     refetchInterval: 15000,
   });
 
+  const { data: analyticsSummary, isLoading: analyticsLoading } = useQuery({
+    queryKey: ['kpis'],
+    queryFn: () => api.getKpis(),
+    enabled: workbookOpen,
+  });
+
   const unreadCount = Array.isArray(notifications)
     ? notifications.filter((n: any) => !n.read).length
     : 0;
@@ -94,15 +101,21 @@ export function Header({ onOpenAiAssistant, title }: HeaderProps) {
   };
 
   // CSV Export utility
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
+    try {
+      const summary = await api.getKpis();
+      const period = summary.generatedAt || new Date().toISOString();
     const csvContent =
       'data:text/csv;charset=utf-8,' +
       'Metric,Value,Period,Status\n' +
-      'MRR,$215400,October 2026,Active\n' +
-      'ARR,$2580000,FY 2026,Active\n' +
-      'CARR,$2980000,FY 2026,Contracted\n' +
-      'NRR,108%,Trailing 12M,Optimal\n' +
-      'Active Subscriptions,5632,Live,Healthy\n';
+        `MRR,${summary.mrr},${period},Calculated\n` +
+        `ARR,${summary.arr},${period},Calculated\n` +
+        `Total Invoiced,${summary.totalInvoiced},${period},Calculated\n` +
+        `Collected Cash,${summary.totalCollected},${period},Calculated\n` +
+        `Outstanding Receivables,${summary.outstandingPayments},${period},Calculated\n` +
+        `Active Subscriptions,${summary.activeSubscriptions},${period},Calculated\n` +
+        `Net Collection Rate,${summary.netCollectionRate ?? 'Insufficient data'},${period},Calculated\n` +
+        `Churn Rate,Insufficient data,${period},Requires historical lifecycle data\n`;
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
@@ -111,6 +124,10 @@ export function Header({ onOpenAiAssistant, title }: HeaderProps) {
     link.click();
     document.body.removeChild(link);
     setActiveMenu(null);
+    } catch {
+      setModelMessage('Analytics export failed because current metrics could not be loaded.');
+      setTimeout(() => setModelMessage(null), 4000);
+    }
   };
 
   // Trigger Billing Model
@@ -121,7 +138,7 @@ export function Header({ onOpenAiAssistant, title }: HeaderProps) {
       const res = await api.triggerBillingRun();
       setModelMessage(`Simulation completed: ${res.invoicesCreated || 0} invoices processed.`);
     } catch {
-      setModelMessage('Billing cycle simulation queued successfully.');
+      setModelMessage('Billing run could not be started.');
     } finally {
       setModelRunning(false);
       setTimeout(() => setModelMessage(null), 4000);
@@ -577,9 +594,9 @@ export function Header({ onOpenAiAssistant, title }: HeaderProps) {
                   <BookOpen className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">SubFlow Financial Workbook</h3>
+                  <h3 className="text-sm font-bold text-slate-900">Current Financial Summary</h3>
                   <p className="text-[11px] text-slate-500">
-                    Scenario modeling, cohort cashflows, and ARR projections
+                    Current values calculated from business records
                   </p>
                 </div>
               </div>
@@ -597,36 +614,40 @@ export function Header({ onOpenAiAssistant, title }: HeaderProps) {
               <div className="grid grid-cols-3 gap-3">
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Model Run-Rate
+                    Current MRR
                   </span>
-                  <p className="text-lg font-extrabold text-slate-900 mt-0.5">$215,400</p>
-                  <p className="text-[10px] text-emerald-600 font-semibold mt-1">▲ 5.7% Expansion</p>
+                  <p className="text-lg font-extrabold text-slate-900 mt-0.5">
+                    {analyticsLoading ? 'Loading…' : analyticsSummary ? formatCurrency(analyticsSummary.mrr, analyticsSummary.currency) : 'Unavailable'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-medium mt-1">Before tax, after discounts</p>
                 </div>
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Contracted ARR
+                    Current ARR
                   </span>
-                  <p className="text-lg font-extrabold text-slate-900 mt-0.5">$2.58M</p>
-                  <p className="text-[10px] text-emerald-600 font-semibold mt-1">▲ 3.4% QoQ</p>
+                  <p className="text-lg font-extrabold text-slate-900 mt-0.5">
+                    {analyticsLoading ? 'Loading…' : analyticsSummary ? formatCurrency(analyticsSummary.arr, analyticsSummary.currency) : 'Unavailable'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-medium mt-1">MRR × 12</p>
                 </div>
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     Net Retention
                   </span>
-                  <p className="text-lg font-extrabold text-slate-900 mt-0.5">108.0%</p>
-                  <p className="text-[10px] text-slate-500 font-medium mt-1">Upper quartile SaaS</p>
+                  <p className="text-lg font-extrabold text-slate-900 mt-0.5">Insufficient data</p>
+                  <p className="text-[10px] text-slate-500 font-medium mt-1">Retention needs lifecycle history</p>
                 </div>
               </div>
 
-              {/* Modeling Forecast */}
+              {/* Financial definitions */}
               <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/40 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800">Growth Scenario Target</span>
-                  <span className="text-xs font-bold text-blue-600">+18% Net Expansion</span>
+                  <span className="text-xs font-bold text-slate-800">Recurring revenue definition</span>
+                  <span className="text-xs font-semibold text-slate-600">Source-based</span>
                 </div>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Active billing model estimates an incremental <strong>+$38,700 MRR</strong> over the
-                  next 90 days assuming current cohort retention holds above 106%.
+                  MRR uses active subscription recurring value normalized to a month, before tax and after discounts.
+                  Forecasts are not displayed without sufficient historical records.
                 </p>
               </div>
 

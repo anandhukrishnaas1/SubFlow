@@ -1,17 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
-// In-memory demo store fallback if API server is not running
-let demoStore: any = {
-  kpis: {
-    totalCustomers: 3,
-    activeSubscriptions: 2,
-    mrr: 121.24,
-    arr: 1454.88,
-    totalRevenue: 93.6,
-    outstandingPayments: 43.24,
-    overdueInvoices: 0,
-    upcomingRenewals: 2,
-  },
+// Read-only sample records are available only when explicit demo mode is enabled.
+const demoStore: any = {
   products: [
     {
       id: 'prod_cloud_core',
@@ -241,144 +231,131 @@ let demoStore: any = {
   ],
 };
 
-async function fetchFromApi(endpoint: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('subflow_token') || 'demo-admin-token' : 'demo-admin-token';
-  const role = typeof window !== 'undefined' ? localStorage.getItem('subflow_role') || 'admin' : 'admin';
-  const uid = typeof window !== 'undefined' ? localStorage.getItem('subflow_uid') || 'demo-admin-uid' : 'demo-admin-uid';
-
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-    'x-mock-role': role,
-    'x-mock-uid': uid,
-    ...(options.headers || {}),
-  };
-
-  try {
-    const res = await fetch(`${API_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
-    if (!res.ok) {
-      throw new Error(`API error: ${res.status} ${res.statusText}`);
-    }
-    return await res.json();
-  } catch (err) {
-    // Graceful fallback to demoStore if backend server is not running
-    console.info(`[SubFlow Client] Backend not reachable on ${endpoint}, serving from client cache:`, err);
-    return handleFallback(endpoint, options);
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly requestId?: string,
+    public readonly errorCode?: string,
+  ) {
+    super(message);
+    this.name = 'ApiError';
   }
 }
 
-function handleFallback(endpoint: string, options: RequestInit = {}): any {
-  const path = endpoint.split('?')[0];
-  const method = (options.method || 'GET').toUpperCase();
+const demoMode =
+  process.env.NODE_ENV === 'development' &&
+  process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const mockAuthEnabled =
+  process.env.NODE_ENV === 'development' &&
+  process.env.NEXT_PUBLIC_ENABLE_MOCK_AUTH === 'true';
 
-  if (path === '/analytics/kpis') return demoStore.kpis;
-  if (path === '/analytics/revenue-trends') {
-    return [
-      { month: 'Jun', revenue: 420 },
-      { month: 'Jul', revenue: 680 },
-      { month: 'Aug', revenue: 950 },
-      { month: 'Sep', revenue: 1120 },
-      { month: 'Oct', revenue: 1450 },
-      { month: 'Nov', revenue: Number(demoStore.kpis.totalRevenue) || 93.6 },
-    ];
+async function fetchFromApi(endpoint: string, options: RequestInit = {}) {
+  const token =
+    typeof window !== 'undefined' ? localStorage.getItem('subflow_token') : null;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...((options.headers || {}) as Record<string, string>),
+  };
+  if (typeof window !== 'undefined' && !headers['x-correlation-id']) {
+    headers['x-correlation-id'] = crypto.randomUUID();
   }
-  if (path === '/analytics/subscription-breakdown') {
-    return {
-      total: demoStore.subscriptions.length,
-      statusCounts: {
-        active: demoStore.subscriptions.filter((s: any) => s.status === 'active').length,
-        paused: demoStore.subscriptions.filter((s: any) => s.status === 'paused').length,
-        confirmed: demoStore.subscriptions.filter((s: any) => s.status === 'confirmed').length,
-        cancelled: demoStore.subscriptions.filter((s: any) => s.status === 'cancelled').length,
-      },
-    };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  } else if (mockAuthEnabled && typeof window !== 'undefined') {
+    headers['x-mock-role'] = localStorage.getItem('subflow_role') || 'admin';
+    headers['x-mock-uid'] = localStorage.getItem('subflow_uid') || 'demo-admin-uid';
   }
-  if (path === '/products') {
-    if (method === 'POST') {
-      const body = JSON.parse((options.body as string) || '{}');
-      const item = { id: `prod_${Date.now()}`, ...body, status: 'active', variants: body.variants || [] };
-      demoStore.products.unshift(item);
-      return item;
+
+  const method = (options.method || 'GET').toUpperCase();
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch (error) {
+    if (
+      demoMode &&
+      method === 'GET' &&
+      !endpoint.startsWith('/analytics')
+    ) {
+      return handleFallback(endpoint);
     }
+    const correlationId = headers['x-correlation-id'];
+    const message = correlationId
+      ? `Network request failed (Correlation ID: ${correlationId}).`
+      : 'Network request failed.';
+    throw new ApiError(message, 0, correlationId);
+  }
+
+  if (!response.ok) {
+    let responseBody: { error?: unknown; errorCode?: unknown; requestId?: unknown } = {};
+    try {
+      responseBody = await response.clone().json();
+    } catch {
+      responseBody = {};
+    }
+    const requestId =
+      response.headers.get('x-request-id') ||
+      (typeof responseBody.requestId === 'string' ? responseBody.requestId : undefined);
+    const errorCode =
+      typeof responseBody.errorCode === 'string' ? responseBody.errorCode : undefined;
+    const responseMessage =
+      typeof responseBody.error === 'string' ? responseBody.error : undefined;
+    const safeMessage = responseMessage || `API request failed with status ${response.status}`;
+    throw new ApiError(
+      requestId ? `${safeMessage} (Request ID: ${requestId})` : safeMessage,
+      response.status,
+      requestId,
+      errorCode,
+    );
+  }
+  return response.json();
+}
+
+function handleFallback(endpoint: string): any {
+  const path = endpoint.split('?')[0];
+  if (path === '/products') {
     return demoStore.products;
   }
   if (path.startsWith('/products/')) {
     const id = path.split('/')[2];
-    return demoStore.products.find((p: any) => p.id === id) || demoStore.products[0];
+    const product = demoStore.products.find((p: any) => p.id === id);
+    if (!product) throw new Error(`No demo product found for ${id}.`);
+    return product;
   }
 
   if (path === '/plans') {
-    if (method === 'POST') {
-      const body = JSON.parse((options.body as string) || '{}');
-      const item = { id: `plan_${Date.now()}`, ...body, status: 'active' };
-      demoStore.plans.unshift(item);
-      return item;
-    }
     return demoStore.plans;
   }
 
   if (path === '/customers') {
-    if (method === 'POST') {
-      const body = JSON.parse((options.body as string) || '{}');
-      const item = { id: `cust_${Date.now()}`, ...body, status: 'active', createdAt: new Date().toISOString() };
-      demoStore.customers.unshift(item);
-      demoStore.kpis.totalCustomers += 1;
-      return item;
-    }
     return demoStore.customers;
   }
 
   if (path === '/subscriptions') {
-    if (method === 'POST') {
-      const body = JSON.parse((options.body as string) || '{}');
-      const item = {
-        id: `sub_${Date.now()}`,
-        number: `SUB-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
-        status: 'active',
-        startDate: new Date().toISOString(),
-        ...body,
-      };
-      demoStore.subscriptions.unshift(item);
-      demoStore.kpis.activeSubscriptions += 1;
-      demoStore.kpis.mrr += Number(item.total) || 0;
-      return item;
-    }
     return demoStore.subscriptions;
   }
 
   if (path.startsWith('/subscriptions/')) {
     const parts = path.split('/');
     const id = parts[2];
-    const action = parts[3];
     const sub = demoStore.subscriptions.find((s: any) => s.id === id);
-    if (sub && action) {
-      if (action === 'activate') sub.status = 'active';
-      if (action === 'pause') sub.status = 'paused';
-      if (action === 'cancel') sub.status = 'cancelled';
-      if (action === 'confirm') sub.status = 'confirmed';
-      return sub;
-    }
-    return sub || demoStore.subscriptions[0];
+    if (!sub) throw new Error(`No demo subscription found for ${id}.`);
+    return sub;
   }
 
   if (path === '/invoices') return demoStore.invoices;
   if (path.startsWith('/invoices/')) {
     const id = path.split('/')[2];
-    return demoStore.invoices.find((i: any) => i.id === id) || demoStore.invoices[0];
+    const invoice = demoStore.invoices.find((i: any) => i.id === id);
+    if (!invoice) throw new Error(`No demo invoice found for ${id}.`);
+    return invoice;
   }
 
   if (path === '/payments') {
-    if (method === 'POST') {
-      const body = JSON.parse((options.body as string) || '{}');
-      const item = { id: `pay_${Date.now()}`, ...body, paymentDate: new Date().toISOString() };
-      demoStore.payments.unshift(item);
-      demoStore.kpis.totalRevenue += Number(item.amount) || 0;
-      demoStore.kpis.outstandingPayments = Math.max(0, demoStore.kpis.outstandingPayments - Number(item.amount));
-      return item;
-    }
     return demoStore.payments;
   }
 
@@ -386,13 +363,37 @@ function handleFallback(endpoint: string, options: RequestInit = {}): any {
   if (path === '/taxes') return demoStore.taxes;
   if (path === '/discounts') return demoStore.discounts;
 
-  return [];
+  throw new Error(`No read-only demo data is available for ${path}.`);
 }
 
 export const api = {
   getKpis: () => fetchFromApi('/analytics/kpis'),
-  getRevenueTrends: () => fetchFromApi('/analytics/revenue-trends'),
+  getFinancialSummary: () => fetchFromApi('/analytics/financial-summary'),
+  getRevenueTrends: (range?: { from?: string; to?: string }) => {
+    const params = new URLSearchParams();
+    if (range?.from) params.set('from', range.from);
+    if (range?.to) params.set('to', range.to);
+    const query = params.toString();
+    return fetchFromApi(`/analytics/revenue-trends${query ? `?${query}` : ''}`);
+  },
+  getBillingTrends: (range?: { from?: string; to?: string }) => {
+    const params = new URLSearchParams();
+    if (range?.from) params.set('from', range.from);
+    if (range?.to) params.set('to', range.to);
+    const query = params.toString();
+    return fetchFromApi(`/analytics/billing-trends${query ? `?${query}` : ''}`);
+  },
   getSubscriptionBreakdown: () => fetchFromApi('/analytics/subscription-breakdown'),
+  getSubscriptionMetrics: () => fetchFromApi('/analytics/subscription-metrics'),
+  getRenewals: (days = 7) =>
+    fetchFromApi(`/analytics/renewals?days=${encodeURIComponent(days)}`),
+  getAnalyticsRisks: () => fetchFromApi('/analytics/risks'),
+  getAnalyticsInsights: () => fetchFromApi('/analytics/insights'),
+  askAnalytics: (question: string) =>
+    fetchFromApi('/analytics/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question }),
+    }),
 
   // Products
   getProducts: (status?: string) => fetchFromApi(`/products${status ? `?status=${status}` : ''}`),

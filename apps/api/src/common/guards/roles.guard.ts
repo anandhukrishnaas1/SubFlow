@@ -18,14 +18,18 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (!requiredRoles || requiredRoles.length === 0) {
-      return true;
-    }
-
     const { user } = context.switchToHttp().getRequest();
 
     if (!user || !user.role) {
       throw new ForbiddenException('User has no assigned role');
+    }
+
+    if (!Object.values(UserRole).includes(user.role as UserRole)) {
+      throw new ForbiddenException('User has an invalid role');
+    }
+
+    if (!requiredRoles || requiredRoles.length === 0) {
+      return true;
     }
 
     // Admin has superuser access

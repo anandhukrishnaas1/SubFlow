@@ -1,6 +1,6 @@
 # SubFlow — Event-Driven Subscription Management & Recurring Billing Platform
 
-SubFlow is an enterprise-grade, event-driven subscription management and automated recurring billing SaaS platform designed for sub-second read performance (< 50ms) and real-time live data streaming using **Firebase Firestore**, **Next.js 15**, and **NestJS 10**.
+SubFlow is an event-driven subscription management and recurring billing platform using **Firebase Firestore**, **Next.js 15**, and **NestJS 10**. Performance targets are not claimed without measured results.
 
 
 ---
@@ -8,8 +8,8 @@ SubFlow is an enterprise-grade, event-driven subscription management and automat
 ## Key Highlights & Architecture
 
 - **Event-Driven Architecture**: Powered by `@nestjs/event-emitter` (EventEmitter2) and BullMQ. Status transitions (confirm, activate, pause, renew, cancel, invoice, pay) emit domain events asynchronously without blocking request threads.
-- **Ultra-Fast Performance (< 2s SLA)**: Pre-computed KPI documents in `counters/analytics` and denormalized document models deliver sub-50ms reads.
-- **Zero-Polling Real-Time UI**: Client hooks subscribe via Firestore `onSnapshot` to automatically stream updates across KPI dashboards, notification badges, and invoice states.
+- **Source-Derived Analytics**: The Analytics API calculates financial metrics from current business records; the legacy `counters/analytics` document is not treated as authoritative.
+- **Evidence-Grounded Copilot**: Questions use backend-calculated metrics and return supporting evidence and data limitations. Gemini explanations are optional and receive only aggregate numeric evidence.
 - **Automated Billing Engine**: Idempotent billing execution calculates tax rules, coupon discounts, line item quantities, and advances subscription billing dates without duplicating invoices.
 - **Role-Based Tenant Isolation**: Enforced at the database layer via `firestore.rules` for Admin, Staff, and Customer users.
 - **Customer Self-Service Portal**: A dedicated `/portal` view for subscribers to track active plans, review billing history, and download PDF receipts.
@@ -26,21 +26,21 @@ flowchart TB
     subgraph CLIENT["1. Presentation Tier (Next.js 15)"]
         ADMIN_UI["Admin & Staff Dashboard<br/>(Live KPIs, Catalog, Invoices, Subscriptions)"]:::clientTier
         PORTAL_UI["Customer Self-Service Portal<br/>(My Subscriptions, Invoices, Receipts)"]:::clientTier
-        LIVE_SYNC["Firestore onSnapshot Live Sync<br/>(Instant UI Push < 50ms)"]:::clientTier
+        QUERY_CACHE["TanStack Query API data"]:::clientTier
     end
 
     subgraph GATEWAY["2. Modular Backend Engine (NestJS 10)"]
         AUTH_GUARD["RBAC & Firebase Auth Guards<br/>(Custom Claims: Admin, Staff, Customer)"]:::apiTier
         CORE_SERVICES["Business Services<br/>(Subscription, Billing, Invoice, Payment, Tax)"]:::apiTier
+        ANALYTICS["AnalyticsModule<br/>(Calculates from source records)"]:::apiTier
     end
 
     subgraph EVENTS["3. Asynchronous Domain Event Hub"]
         BUS["EventEmitter2 Domain Event Bus<br/>(Non-blocking Write Pipeline < 150ms)"]:::eventTier
     end
 
-    subgraph DATA["4. Database & Pre-Computed Analytics"]
+    subgraph DATA["4. Business Data"]
         FIRESTORE["Cloud Firestore Database<br/>(Denormalized NoSQL + Security Rules)"]:::dataTier
-        COUNTERS["counters/analytics<br/>(Pre-Computed Metrics for Instant Reads)"]:::dataTier
     end
 
     subgraph WORKERS["5. Async Jobs & Cache"]
@@ -50,21 +50,40 @@ flowchart TB
     ADMIN_UI <-->|REST API| AUTH_GUARD
     PORTAL_UI <-->|REST API| AUTH_GUARD
     AUTH_GUARD --> CORE_SERVICES
+    AUTH_GUARD --> ANALYTICS
     CORE_SERVICES -->|Emits Events| BUS
     CORE_SERVICES <-->|Direct CRUD| FIRESTORE
+    ANALYTICS -->|Read source records| FIRESTORE
     BUS -->|Pushes Async Tasks| QUEUE
-    BUS -->|Updates Realtime KPIs| COUNTERS
-    COUNTERS -.->|Live Data Push| LIVE_SYNC
-    LIVE_SYNC -.->|Zero-Lag Render| ADMIN_UI
+    ANALYTICS -->|REST responses| QUERY_CACHE
+    QUERY_CACHE --> ADMIN_UI
 ```
 
-> **Full System Architecture Guide & Sequence Diagrams**: See [ARCHITECTURE.md](file:///Users/anandhukrishnaas/Desktop/SubFlow/ARCHITECTURE.md).
+> **Full System Architecture Guide & Sequence Diagrams**: See [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+## Analytics and Copilot
+
+The dashboard and reports use `/api/analytics` endpoints; analytics requests are restricted to authenticated administrators and staff.
+
+- **MRR**: active subscription recurring value normalized to a month, calculated from pre-tax subtotal after discounts. Tax-inclusive totals are not used when a subtotal is present.
+- **ARR**: displayed MRR × 12, rounded to the currency precision so the reported values remain consistent.
+- **Invoiced**: non-draft, non-cancelled invoice totals grouped by invoice issue date (UTC).
+- **Collected**: recorded payment amounts excluding records explicitly marked failed, cancelled, void, or refunded; trends use payment date (UTC).
+- **Receivables**: positive outstanding balances on non-draft, non-cancelled invoices.
+- **Net collection rate**: invoice-recorded paid amounts divided by eligible invoice totals. It is unavailable when there are no eligible invoices.
+- **ARPU**: current MRR divided by current customer count; unavailable with no customers.
+- Customer churn is calculated over the trailing 30 days only when eligible subscriptions have sufficient lifecycle dates. Revenue churn, NRR, cohort retention, and forecasts remain unavailable without historical value/cohort snapshots. Risks include record-level evidence.
+- The Copilot's unqualified collection question covers all available recorded payments; “this month”, “last month”, and ISO date ranges use UTC calendar dates. Payments sharing a transaction reference are counted once.
+
+Endpoints include `GET /api/analytics/financial-summary`, `GET /api/analytics/billing-trends`, `GET /api/analytics/subscription-metrics`, `GET /api/analytics/renewals`, `GET /api/analytics/risks`, `GET /api/analytics/insights`, and `POST /api/analytics/ask`. Billing trends accept optional `from` and `to` dates spanning at most 24 months.
+
+For local development, set `SUBFLOW_MOCK_FIRESTORE=true`, `SUBFLOW_ENABLE_MOCK_AUTH=true`, and `NEXT_PUBLIC_ENABLE_MOCK_AUTH=true` explicitly in a development-only `.env`. Never enable mock authentication in production. Seeded mock records are tagged `SYNTHETIC` and excluded by default; to view these records in development only, explicitly set `INCLUDE_SYNTHETIC_ANALYTICS=true`. `NEXT_PUBLIC_DEMO_MODE=true` is a read-only frontend fallback for non-analytics lists; analytics and mutations always require the API. Configure both `GEMINI_API_KEY` and `GEMINI_MODEL` to enable optional grounded explanations; without them, deterministic answers still work.
 
 ---
 
 ## Environment Variables (.env)
 
-A ready-to-use configuration is provided in [.env](file:///Users/anandhukrishnaas/Desktop/SubFlow/.env) and [.env.example](file:///Users/anandhukrishnaas/Desktop/SubFlow/.env.example):
+A configuration template is provided in [.env.example](./.env.example):
 
 ```env
 # Firebase Client SDK (Web)
@@ -124,7 +143,7 @@ npm run dev:api
 
 ## Seed Demo Data
 
-SubFlow includes a seed script with pre-configured products, plans, taxes, discounts, customers, subscriptions, invoices, and analytics counters:
+SubFlow includes a seed script with pre-configured products, plans, taxes, discounts, customers, subscriptions, and invoices. Seeded `counters/analytics` values are legacy fixtures and are ignored by current analytics calculations.
 
 ```bash
 # Seed Firestore

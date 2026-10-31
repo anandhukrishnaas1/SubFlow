@@ -221,6 +221,7 @@ async function runSeed() {
   const users = [
     {
       uid: 'user_admin_001',
+      dataOrigin: 'SYNTHETIC',
       email: 'admin@subflow.io',
       displayName: 'Alex Rivers (Admin)',
       role: 'admin',
@@ -231,6 +232,7 @@ async function runSeed() {
     },
     {
       uid: 'cust_acme_corp',
+      dataOrigin: 'SYNTHETIC',
       email: 'finance@acmecorp.com',
       displayName: 'Acme Corporation',
       role: 'customer',
@@ -247,6 +249,7 @@ async function runSeed() {
     },
     {
       uid: 'cust_techstart_inc',
+      dataOrigin: 'SYNTHETIC',
       email: 'billing@techstart.io',
       displayName: 'TechStart Inc',
       role: 'customer',
@@ -263,6 +266,7 @@ async function runSeed() {
     },
     {
       uid: 'cust_global_logistics',
+      dataOrigin: 'SYNTHETIC',
       email: 'operations@globallogistics.com',
       displayName: 'Global Logistics Partners',
       role: 'customer',
@@ -289,6 +293,7 @@ async function runSeed() {
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate()).toISOString();
   const subRef1 = db.collection('subscriptions').doc('sub_acme_pro');
   await subRef1.set({
+    dataOrigin: 'SYNTHETIC',
     number: 'SUB-20261031-1001',
     customerId: 'cust_acme_corp',
     customerName: 'Acme Corporation',
@@ -337,6 +342,7 @@ async function runSeed() {
 
   const subRef2 = db.collection('subscriptions').doc('sub_techstart_starter');
   await subRef2.set({
+    dataOrigin: 'SYNTHETIC',
     number: 'SUB-20261031-1002',
     customerId: 'cust_techstart_inc',
     customerName: 'TechStart Inc',
@@ -371,6 +377,7 @@ async function runSeed() {
   console.log('🧾 Seeding Invoices...');
   const invRef1 = db.collection('invoices').doc('inv_acme_oct');
   await invRef1.set({
+    dataOrigin: 'SYNTHETIC',
     number: 'INV-20261031-0001',
     subscriptionId: 'sub_acme_pro',
     subscriptionNumber: 'SUB-20261031-1001',
@@ -410,6 +417,7 @@ async function runSeed() {
 
   const invRef2 = db.collection('invoices').doc('inv_techstart_oct');
   await invRef2.set({
+    dataOrigin: 'SYNTHETIC',
     number: 'INV-20261031-0002',
     subscriptionId: 'sub_techstart_starter',
     subscriptionNumber: 'SUB-20261031-1002',
@@ -441,6 +449,7 @@ async function runSeed() {
   // 8. Seed Payments
   console.log('💳 Seeding Payments...');
   await db.collection('payments').doc('pay_acme_001').set({
+    dataOrigin: 'SYNTHETIC',
     invoiceId: 'inv_acme_oct',
     invoiceNumber: 'INV-20261031-0001',
     customerId: 'cust_acme_corp',
@@ -454,7 +463,7 @@ async function runSeed() {
   });
 
   // 9. Seed Counters
-  console.log('📊 Seeding Counters Analytics document for instant UI snapshots...');
+  console.log('📊 Seeding legacy analytics counter fixture (ignored by AnalyticsModule)...');
   await db.collection('counters').doc('analytics').set({
     totalCustomers: 3,
     activeSubscriptions: 2,

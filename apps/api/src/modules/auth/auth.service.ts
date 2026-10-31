@@ -1,4 +1,10 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { FirebaseService } from '../../firebase/firebase.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EVENTS } from '@subflow/events';
@@ -14,6 +20,9 @@ export class AuthService {
   ) {}
 
   async setRole(uid: string, role: UserRole | string): Promise<{ success: boolean; uid: string; role: string }> {
+    if (!Object.values(UserRole).includes(role as UserRole)) {
+      throw new BadRequestException('Invalid user role');
+    }
     try {
       await this.firebase.getAuth().setCustomUserClaims(uid, { role });
       // Also update firestore user profile
@@ -26,14 +35,15 @@ export class AuthService {
       );
       this.logger.log(`Assigned role '${role}' to user: ${uid}`);
       return { success: true, uid, role };
-    } catch (error) {
-      throw new BadRequestException(`Failed to set user claims: ${error.message}`);
+    } catch {
+      this.logger.error('Failed to update user role');
+      throw new InternalServerErrorException('Unable to update user role');
     }
   }
 
   async createUser(dto: {
     email: string;
-    password?: string;
+    password: string;
     displayName: string;
     role?: UserRole | string;
     company?: string;
@@ -45,15 +55,22 @@ export class AuthService {
     zipCode?: string;
   }): Promise<any> {
     const role = dto.role || UserRole.CUSTOMER;
-    const password = dto.password || 'SubFlow@2026!';
+    if (!Object.values(UserRole).includes(role as UserRole)) {
+      throw new BadRequestException('Invalid user role');
+    }
+    if (!dto.password) {
+      throw new BadRequestException('A password is required');
+    }
+    let createdUid: string | undefined;
 
     try {
       // 1. Create in Firebase Auth
       const userRecord = await this.firebase.getAuth().createUser({
         email: dto.email,
-        password: password,
+        password: dto.password,
         displayName: dto.displayName,
       });
+      createdUid = userRecord.uid;
 
       // 2. Set Custom Claim
       await this.firebase.getAuth().setCustomUserClaims(userRecord.uid, { role });
@@ -96,9 +113,16 @@ export class AuthService {
       }
 
       return userData;
-    } catch (error) {
-      this.logger.error(`Failed creating user: ${error.message}`);
-      throw new BadRequestException(`Failed creating user: ${error.message}`);
+    } catch {
+      if (createdUid) {
+        try {
+          await this.firebase.getAuth().deleteUser(createdUid);
+        } catch {
+          this.logger.error('Failed to remove incomplete Firebase account after registration failure');
+        }
+      }
+      this.logger.error('Failed creating user account');
+      throw new BadRequestException('Unable to create user account');
     }
   }
 
@@ -118,8 +142,16 @@ export class AuthService {
         };
         await this.firebase.getFirestore().collection('users').doc(uid).set(fallback, { merge: true });
         return fallback;
-      } catch {
-        return null;
+      } catch (error) {
+        const code =
+          typeof error === 'object' && error !== null && 'code' in error
+            ? String(error.code)
+            : '';
+        if (code === 'auth/user-not-found') {
+          throw new NotFoundException('User profile not found');
+        }
+        this.logger.error('Failed to load user profile');
+        throw new InternalServerErrorException('Unable to load user profile');
       }
     }
     return doc.data();

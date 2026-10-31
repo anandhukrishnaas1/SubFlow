@@ -16,6 +16,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '@subflow/shared';
 
 @Controller('plans')
+@UseGuards(FirebaseAuthGuard, RolesGuard)
 export class PlanController {
   constructor(private readonly planService: PlanService) {}
 

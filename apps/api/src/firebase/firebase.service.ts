@@ -5,10 +5,10 @@ import { MockFirestore } from './mock-firestore';
 @Injectable()
 export class FirebaseService implements OnModuleInit {
   private readonly logger = new Logger(FirebaseService.name);
-  private app: admin.app.App;
-  private auth: admin.auth.Auth;
+  private app?: admin.app.App;
+  private auth?: admin.auth.Auth;
   private db: any;
-  private storage: admin.storage.Storage;
+  private storage?: admin.storage.Storage;
   private isMock = false;
 
   onModuleInit() {
@@ -32,7 +32,11 @@ export class FirebaseService implements OnModuleInit {
         this.logger.log(`Initialized Firebase Admin with Service Account for project: ${projectId}`);
         return;
       } catch (e) {
-        this.logger.warn(`Failed parsing FIREBASE_SERVICE_ACCOUNT_KEY: ${e.message}`);
+        const message = e instanceof Error ? e.message : String(e);
+        this.logger.error(`Failed initializing Firebase from FIREBASE_SERVICE_ACCOUNT_KEY: ${message}`);
+        if (process.env.NODE_ENV === 'production') {
+          throw e;
+        }
       }
     }
 
@@ -50,21 +54,43 @@ export class FirebaseService implements OnModuleInit {
       return;
     }
 
-    // High performance in-memory mock engine with full Firestore API interface
-    this.isMock = true;
-    this.db = new MockFirestore();
-    this.logger.log(`Initialized SubFlow In-Memory Firestore Engine (Dev Mode) with pre-seeded domain records`);
+    if (
+      process.env.NODE_ENV === 'development' &&
+      process.env.SUBFLOW_MOCK_FIRESTORE === 'true'
+    ) {
+      this.isMock = true;
+      this.db = new MockFirestore();
+      this.logger.warn('Initialized explicitly enabled in-memory Firestore mock.');
+      return;
+    }
+
+    throw new Error(
+      'Firebase is not configured. Configure FIREBASE_SERVICE_ACCOUNT_KEY or FIRESTORE_EMULATOR_HOST; the mock requires SUBFLOW_MOCK_FIRESTORE=true in development.',
+    );
   }
 
   getAuth(): admin.auth.Auth {
+    if (!this.auth) {
+      throw new Error('Firebase Authentication is unavailable in Firestore mock mode.');
+    }
     return this.auth;
   }
 
   getFirestore(): admin.firestore.Firestore {
-    return this.db as any;
+    if (!this.db) {
+      throw new Error('Firestore has not been initialized.');
+    }
+    return this.db as admin.firestore.Firestore;
   }
 
   getStorage(): admin.storage.Storage {
+    if (!this.storage) {
+      throw new Error('Firebase Storage is unavailable until Firebase is configured.');
+    }
     return this.storage;
+  }
+
+  get isMockFirestore(): boolean {
+    return this.isMock;
   }
 }

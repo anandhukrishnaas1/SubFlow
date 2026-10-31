@@ -13,6 +13,7 @@ import { FirebaseAuthGuard } from '../../common/guards/firebase-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
+import { assertCustomerOwnsResource } from '../../common/guards/customer-resource.guard';
 import { UserRole } from '@subflow/shared';
 
 @Controller('quotations')
@@ -33,8 +34,13 @@ export class QuotationController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.quotationService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const quotation = await this.quotationService.findOne(id);
+    assertCustomerOwnsResource(user, quotation, 'Quotation');
+    return quotation;
   }
 
   @Post()
@@ -50,12 +56,23 @@ export class QuotationController {
   }
 
   @Patch(':id/accept')
-  async accept(@Param('id') id: string) {
+  async accept(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const quotation = await this.quotationService.findOne(id);
+    assertCustomerOwnsResource(user, quotation, 'Quotation');
     return this.quotationService.accept(id);
   }
 
   @Patch(':id/reject')
-  async reject(@Param('id') id: string, @Body('reason') reason?: string) {
+  async reject(
+    @Param('id') id: string,
+    @Body('reason') reason: string | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const quotation = await this.quotationService.findOne(id);
+    assertCustomerOwnsResource(user, quotation, 'Quotation');
     return this.quotationService.reject(id, reason);
   }
 }

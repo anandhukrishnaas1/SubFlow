@@ -1,13 +1,13 @@
 # SubFlow — Architecture & System Design Specification
 
 > **Prepared for Evaluators, Invigilators, and System Architects**  
-> *A comprehensive technical breakdown of SubFlow's event-driven recurring billing engine, real-time Firestore database schema, and microsecond read architecture.*
+> *A technical breakdown of SubFlow's event-driven recurring billing engine, Firestore data model, and API architecture.*
 
 ---
 
 ## 1. High-Level System Architecture
 
-SubFlow is built on a distributed, event-driven hybrid architecture designed to achieve **sub-50ms reads** and non-blocking writes.
+SubFlow uses an event-driven modular backend. API latency and throughput targets require measurement and are not asserted here.
 
 ```mermaid
 flowchart TB
@@ -30,6 +30,7 @@ flowchart TB
         BILL_MODULE["BillingModule & Engine<br/>(Automated Cadence Scanner)"]:::apiTier
         INV_MODULE["InvoiceModule & PDF Engine<br/>(Idempotent Invoice Pipeline)"]:::apiTier
         PAY_MODULE["PaymentModule<br/>(Reconciliation Engine)"]:::apiTier
+        ANALYTICS["AnalyticsModule<br/>(Source-record calculations)"]:::apiTier
     end
 
     subgraph EVENT_BUS["3. Distributed Domain Event Bus (EventEmitter2)"]
@@ -38,8 +39,6 @@ flowchart TB
 
     subgraph STORAGE["4. Managed Cloud Database & Storage (Firebase)"]
         FIRESTORE["Cloud Firestore Database<br/>(Denormalized NoSQL + Security Rules)"]:::dataTier
-        COUNTERS["counters/analytics<br/>(Pre-Computed KPIs for < 50ms Reads)"]:::dataTier
-        LIVE_STREAM["Firestore onSnapshot Listeners<br/>(Zero-Polling Real-Time Push to Client)"]:::dataTier
         PDF_STORAGE["Firebase Storage<br/>(Generated Invoice PDFs & Signed URLs)"]:::dataTier
     end
 
@@ -52,7 +51,9 @@ flowchart TB
     %% Flow Connections
     ADMIN_UI <-->|REST API + JWT Bearer| AUTH_GUARD
     PORTAL_UI <-->|REST API + JWT Bearer| AUTH_GUARD
-    LIVE_STREAM -.->|Instant Push Stream| QUERY_CACHE
+    ADMIN_UI -->|Analytics REST requests| ANALYTICS
+    ANALYTICS -->|Read source records| FIRESTORE
+    ANALYTICS --> QUERY_CACHE
 
     AUTH_GUARD --> SUB_MODULE
     AUTH_GUARD --> BILL_MODULE
@@ -68,12 +69,10 @@ flowchart TB
     INV_MODULE -->|Direct Read/Write| FIRESTORE
     PAY_MODULE -->|Direct Read/Write| FIRESTORE
 
-    BUS -->|Updates Real-Time KPIs| COUNTERS
     BUS -->|Pushes Async Jobs| REDIS
     REDIS --> CRON
     REDIS --> EMAIL_WORKER
 
-    COUNTERS --> LIVE_STREAM
 ```
 
 ---
@@ -108,15 +107,16 @@ sequenceDiagram
         Note over API,Bus: 3. Domain Event Dispatch (Non-Blocking)
         API->>Bus: Emit 'invoice.created' (invoiceId, customerId, total)
     end
-    API-->>Admin: 200 OK: Processed in < 200ms
+    API-->>Admin: Billing run result
 
     par Background Event Listeners
         Bus->>PDF: Generate A4 PDF invoice buffer
         Bus->>DB: Write notification to users/{customerId}/notifications
-        Bus->>DB: Recalculate counters/analytics (outstanding balance, KPIs)
-    and Instant Real-time UI Update
-        DB-->>Client: Firestore onSnapshot triggered (< 50ms)
-        Client->>Client: Dashboard KPIs & Notification Bell automatically updated
+    and Dashboard Analytics
+        Client->>API: GET /api/analytics/financial-summary
+        API->>DB: Read current subscription, invoice, payment, and customer records
+        DB-->>API: Current source documents
+        API-->>Client: Calculated KPI response
     end
 ```
 
@@ -124,7 +124,7 @@ sequenceDiagram
 
 ## 3. Data Model & Denormalized Schema
 
-To guarantee **reads under 2 seconds** (averaging < 50ms), SubFlow utilizes a denormalized schema where related entity data (customer name, plan details, line items) are embedded directly into the document:
+SubFlow uses a denormalized schema where related entity data (customer name, plan details, line items) may be embedded directly into documents. Read latency depends on the query, dataset, and deployment and has not been measured here:
 
 ```mermaid
 erDiagram
@@ -191,15 +191,7 @@ erDiagram
     }
 
     COUNTERS_ANALYTICS {
-        string id PK "analytics"
-        number totalCustomers
-        number activeSubscriptions
-        number mrr "Monthly Recurring Revenue"
-        number arr "Annual Recurring Revenue"
-        number totalRevenue "Collected Cash"
-        number outstandingPayments "Receivables"
-        number overdueInvoices
-        timestamp lastUpdated
+        string id PK "legacy fixture; ignored by AnalyticsModule"
     }
 ```
 
@@ -209,8 +201,8 @@ erDiagram
 
 | Challenge | Monolithic Approach | SubFlow Event-Driven Approach | Performance Gain |
 |---|---|---|---|
-| **Dashboard Reads** | Heavy SQL JOINs across customers, subscriptions, invoices, and payments | Single document read from `counters/analytics` | **From 1.8s down to < 20ms** |
-| **Real-Time Updates** | Client polls server every 5 seconds (`setInterval`) | Native Firestore `onSnapshot` streaming listener | **Zero polling; Instant updates (< 50ms)** |
+| **Dashboard Analytics** | Reuses a stale seeded counter document | Calculates metrics from current source documents through a protected API | **Latency not yet benchmarked** |
+| **Metric Integrity** | Treats invoice totals and payment totals as a single revenue value | Separates recurring value, invoiced totals, collected cash, and receivables | **Documented definitions; no fabricated trend data** |
 | **Heavy Workloads** | PDF generation and emails executed synchronously in request handler | Enqueued to BullMQ background workers via EventEmitter2 | **API responds in < 150ms** |
 | **Duplicate Invoices** | Prone to double charging if cron job overlaps | Strict `idempotencyKey` checking prior to invoice creation | **100% duplicate charge prevention** |
 | **Data Isolation** | Application-level `WHERE` clauses | Enforced at database engine layer via `firestore.rules` | **Zero cross-tenant leakage vulnerability** |
