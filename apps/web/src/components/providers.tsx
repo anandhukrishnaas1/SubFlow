@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/hooks/use-auth';
 import { SidebarProvider } from '@/hooks/use-sidebar';
+import { CurrencyProvider } from '@/hooks/use-currency';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -21,7 +22,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <SidebarProvider>{children}</SidebarProvider>
+        <SidebarProvider>
+          <CurrencyProvider>{children}</CurrencyProvider>
+        </SidebarProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

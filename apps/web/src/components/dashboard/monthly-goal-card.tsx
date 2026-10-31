@@ -1,9 +1,12 @@
 'use client';
 
 import React from 'react';
-import { ArrowRight, Info } from 'lucide-react';
+import { ArrowRight, Info, Target } from 'lucide-react';
+import { useCurrency } from '@/hooks/use-currency';
 
 export function MonthlyGoalCard() {
+  const { formatAmount } = useCurrency();
+
   // Generate radiating tick bars for the radial semi-circle speedometer
   const totalTicks = 32;
   const activeCount = Math.round(totalTicks * 0.85); // 27 active ticks
@@ -23,11 +26,16 @@ export function MonthlyGoalCard() {
   });
 
   return (
-    <div className="bg-gradient-to-br from-[#f97316] via-[#ea580c] to-[#c2410c] text-white rounded-3xl p-6 sm:p-7 shadow-[0_12px_36px_-6px_rgba(234,88,12,0.4)] flex flex-col justify-between">
+    <div className="bg-gradient-to-br from-[#f97316] via-[#ea580c] to-[#c2410c] text-white rounded-3xl p-6 sm:p-7 shadow-[0_12px_36px_-6px_rgba(234,88,12,0.4)] hover:shadow-[0_16px_40px_-6px_rgba(234,88,12,0.5)] transition-all flex flex-col justify-between">
       <div>
         {/* Header */}
         <div className="flex items-center justify-between pb-2">
-          <h3 className="text-sm font-bold text-white tracking-tight">Monthly Revenue Goal</h3>
+          <div className="flex items-center gap-2">
+            <span className="h-6 w-6 rounded-full bg-white/20 flex items-center justify-center">
+              <Target className="h-3.5 w-3.5 text-white" />
+            </span>
+            <h3 className="text-sm font-bold text-white tracking-tight">Monthly Revenue Goal</h3>
+          </div>
           <button
             onClick={() => alert('Goal forecast settings')}
             className="h-7 w-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
@@ -62,7 +70,7 @@ export function MonthlyGoalCard() {
                 85%
               </span>
               <span className="text-[11px] text-orange-100 font-medium mt-1">
-                $85,000 of $100,000 target
+                {formatAmount(85000)} of {formatAmount(100000)} target
               </span>
             </div>
           </div>
@@ -76,7 +84,7 @@ export function MonthlyGoalCard() {
           <span>15% remaining to hit monthly goal</span>
         </div>
 
-        {/* Multi-segment Bar */}
+        {/* Multi-segment Bar matching template */}
         <div className="w-full bg-black/20 h-2 rounded-full overflow-hidden flex p-0.5">
           <div className="bg-white h-full rounded-full" style={{ width: '45%' }} />
           <div className="bg-emerald-300 h-full rounded-full ml-1" style={{ width: '30%' }} />

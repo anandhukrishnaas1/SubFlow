@@ -6,7 +6,10 @@ import {
   Share2,
   Users,
   Check,
-  BarChart2,
+  TrendingUp,
+  UserCheck,
+  CreditCard,
+  Layers,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -16,10 +19,15 @@ import { RevenueByPlanCard } from '@/components/dashboard/revenue-by-plan-card';
 import { MonthlyGoalCard } from '@/components/dashboard/monthly-goal-card';
 import { RecentSalesCard } from '@/components/dashboard/recent-sales-card';
 import { UserActivityCard } from '@/components/dashboard/user-activity-card';
+import { SubscriptionPipelineDiagram } from '@/components/dashboard/subscription-pipeline-diagram';
+import { CashFlowDiagram } from '@/components/dashboard/cash-flow-diagram';
+import { CurrencySwitcher } from '@/components/dashboard/currency-switcher';
 import { CreateInvoiceModal } from '@/components/dashboard/create-invoice-modal';
 import { AiAssistantDrawer } from '@/components/dashboard/ai-assistant-drawer';
+import { useCurrency } from '@/hooks/use-currency';
 
 export default function DashboardPage() {
+  const { formatAmount } = useCurrency();
   const [aiAssistantOpen, setAiAssistantOpen] = useState(false);
   const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -53,7 +61,7 @@ export default function DashboardPage() {
           onOpenAiAssistant={() => setAiAssistantOpen(true)}
         />
 
-        <main className="p-4 sm:p-8 space-y-6 max-w-7xl mx-auto w-full pb-24 lg:pb-10">
+        <main className="p-4 sm:p-8 space-y-7 max-w-7xl mx-auto w-full pb-24 lg:pb-10">
           {/* Dashboard Title & Quick Actions Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -65,10 +73,14 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-auto">
+            <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+              {/* Currency Swapper Pill ($ USD / ₹ INR) */}
+              <CurrencySwitcher />
+
               <button
+                type="button"
                 onClick={handleShare}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold text-stone-700 bg-white hover:bg-stone-50 border border-stone-200/90 shadow-2xs transition-all active:scale-95"
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold text-stone-700 bg-white hover:bg-stone-50 border border-stone-200/90 shadow-2xs transition-all active:scale-95"
               >
                 {copiedLink ? (
                   <>
@@ -84,9 +96,10 @@ export default function DashboardPage() {
               </button>
 
               <button
+                type="button"
                 onClick={() => setAiAssistantOpen(true)}
                 className="h-9 w-9 rounded-full bg-white hover:bg-stone-50 border border-stone-200/90 flex items-center justify-center text-stone-600 shadow-2xs transition-colors"
-                title="Open Copilot"
+                title="Open Copilot Assistant"
               >
                 <Users className="h-4 w-4" />
               </button>
@@ -96,79 +109,89 @@ export default function DashboardPage() {
           {/* Top 4 Metric Cards Row matching Template */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {/* Card 1: Total Revenue */}
-            <div className="bg-white rounded-3xl p-6 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.06)] transition-all">
+            <div className="bg-white rounded-3xl p-6 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.06)] transition-all flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-stone-500">Total Revenue</span>
-                <div className="h-8 w-8 rounded-full bg-stone-50 border border-stone-100 flex items-center justify-center text-stone-600">
-                  <ShoppingCart className="h-3.5 w-3.5" />
+                <span className="text-xs font-bold text-stone-500">Total Revenue</span>
+                <div className="h-9 w-9 rounded-full bg-stone-50 border border-stone-100 flex items-center justify-center text-stone-700 shadow-2xs">
+                  <ShoppingCart className="h-4 w-4" />
                 </div>
               </div>
-              <div className="flex items-center gap-2.5 mt-3 flex-wrap">
-                <span className="text-3xl font-black text-stone-900 tracking-tight">
-                  $3,500
-                </span>
-                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  +4.8%
-                </span>
+              <div className="mt-3">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="text-3xl font-black text-stone-900 tracking-tight font-mono">
+                    {formatAmount(3500)}
+                  </span>
+                  <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    +4.8%
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-400 mt-2 font-medium">
+                  +{formatAmount(150)} this week
+                </p>
               </div>
-              <p className="text-[11px] text-stone-400 mt-2 font-medium">+$150 this week</p>
             </div>
 
             {/* Card 2: New Subscriptions */}
-            <div className="bg-white rounded-3xl p-6 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.06)] transition-all">
+            <div className="bg-white rounded-3xl p-6 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.06)] transition-all flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-stone-500">New Subscriptions</span>
-                <div className="h-8 w-8 rounded-full bg-stone-50 border border-stone-100 flex items-center justify-center text-stone-600">
-                  <ShoppingCart className="h-3.5 w-3.5" />
+                <span className="text-xs font-bold text-stone-500">New Subscriptions</span>
+                <div className="h-9 w-9 rounded-full bg-stone-50 border border-stone-100 flex items-center justify-center text-stone-700 shadow-2xs">
+                  <Layers className="h-4 w-4" />
                 </div>
               </div>
-              <div className="flex items-center gap-2.5 mt-3 flex-wrap">
-                <span className="text-3xl font-black text-stone-900 tracking-tight">
-                  350
-                </span>
-                <span className="text-[11px] font-bold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
-                  -4.6%
-                </span>
+              <div className="mt-3">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="text-3xl font-black text-stone-900 tracking-tight font-mono">
+                    350
+                  </span>
+                  <span className="text-[11px] font-extrabold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
+                    -4.6%
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-400 mt-2 font-medium">+12 today</p>
               </div>
-              <p className="text-[11px] text-stone-400 mt-2 font-medium">+12 today</p>
             </div>
 
             {/* Card 3: Churn Rate */}
-            <div className="bg-white rounded-3xl p-6 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.06)] transition-all">
+            <div className="bg-white rounded-3xl p-6 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.06)] transition-all flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-stone-500">Churn Rate</span>
-                <div className="h-8 w-8 rounded-full bg-stone-50 border border-stone-100 flex items-center justify-center text-stone-600">
-                  <ShoppingCart className="h-3.5 w-3.5" />
+                <span className="text-xs font-bold text-stone-500">Churn Rate</span>
+                <div className="h-9 w-9 rounded-full bg-stone-50 border border-stone-100 flex items-center justify-center text-stone-700 shadow-2xs">
+                  <TrendingUp className="h-4 w-4" />
                 </div>
               </div>
-              <div className="flex items-center gap-2.5 mt-3 flex-wrap">
-                <span className="text-3xl font-black text-stone-900 tracking-tight">
-                  4.6%
-                </span>
-                <span className="text-[11px] font-bold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
-                  -0.8%
-                </span>
+              <div className="mt-3">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="text-3xl font-black text-stone-900 tracking-tight font-mono">
+                    4.6%
+                  </span>
+                  <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    -0.8%
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-400 mt-2 font-medium">On track to optimal churn</p>
               </div>
-              <p className="text-[11px] text-stone-400 mt-2 font-medium">On track to reach optimal churn</p>
             </div>
 
             {/* Card 4: Active Users */}
-            <div className="bg-white rounded-3xl p-6 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.06)] transition-all">
+            <div className="bg-white rounded-3xl p-6 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-5px_rgba(0,0,0,0.06)] transition-all flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-stone-500">Active Users</span>
-                <div className="h-8 w-8 rounded-full bg-stone-50 border border-stone-100 flex items-center justify-center text-stone-600">
-                  <ShoppingCart className="h-3.5 w-3.5" />
+                <span className="text-xs font-bold text-stone-500">Active Users</span>
+                <div className="h-9 w-9 rounded-full bg-stone-50 border border-stone-100 flex items-center justify-center text-stone-700 shadow-2xs">
+                  <UserCheck className="h-4 w-4" />
                 </div>
               </div>
-              <div className="flex items-center gap-2.5 mt-3 flex-wrap">
-                <span className="text-3xl font-black text-stone-900 tracking-tight">
-                  3,500
-                </span>
-                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  +4.8%
-                </span>
+              <div className="mt-3">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="text-3xl font-black text-stone-900 tracking-tight font-mono">
+                    3,500
+                  </span>
+                  <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    +4.8%
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-400 mt-2 font-medium">+120 this week</p>
               </div>
-              <p className="text-[11px] text-stone-400 mt-2 font-medium">+120 this week</p>
             </div>
           </div>
 
@@ -191,6 +214,12 @@ export default function DashboardPage() {
               <UserActivityCard />
             </div>
           </div>
+
+          {/* Interactive Subscription Lifecycle Pipeline Diagram */}
+          <SubscriptionPipelineDiagram />
+
+          {/* Cash Flow & Net MRR Movement Matrix Diagram */}
+          <CashFlowDiagram />
         </main>
       </div>
 
