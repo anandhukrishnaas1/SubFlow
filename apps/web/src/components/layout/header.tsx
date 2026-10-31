@@ -23,8 +23,10 @@ import {
   FileText,
   DollarSign,
   TrendingUp,
+  Menu,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { useSidebar } from '@/hooks/use-sidebar';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
@@ -36,6 +38,7 @@ interface HeaderProps {
 export function Header({ onOpenAiAssistant, title }: HeaderProps) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { toggleMobile } = useSidebar();
   const [showNotifs, setShowNotifs] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [workbookOpen, setWorkbookOpen] = useState(false);
@@ -129,28 +132,39 @@ export function Header({ onOpenAiAssistant, title }: HeaderProps) {
     <>
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
         {/* Tier 1: Primary Header Bar */}
-        <div className="h-16 px-6 flex items-center justify-between gap-4">
+        <div className="h-16 px-3.5 sm:px-6 flex items-center justify-between gap-2.5 sm:gap-4">
           {/* Left: Brand Identity & Breadcrumb Context */}
-          <div className="flex items-center gap-3.5 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
+            {/* Mobile Hamburger Drawer Trigger */}
+            <button
+              onClick={toggleMobile}
+              className="lg:hidden h-8 w-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-600 hover:text-slate-900 border border-slate-200/60 transition-colors"
+              aria-label="Open navigation menu"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+
             <Link href="/dashboard" className="flex items-center gap-2 group">
               <img
                 src="/subflow-logo.png"
                 alt="SubFlow"
                 height={28}
                 style={{ height: '28px', width: 'auto', maxHeight: '28px' }}
-                className="h-7 w-auto object-contain transition-transform group-hover:scale-105"
+                className="h-6 sm:h-7 w-auto object-contain transition-transform group-hover:scale-105"
               />
             </Link>
 
-            <div className="h-4 w-px bg-slate-200" />
+            <div className="h-4 w-px bg-slate-200 hidden sm:block" />
 
-            <div className="flex items-center gap-2 text-xs">
-              <span className="font-semibold text-slate-400 hidden sm:inline">SubFlow</span>
-              <span className="text-slate-300 hidden sm:inline">/</span>
-              <h1 className="font-bold text-slate-900 text-sm tracking-tight">{getPageTitle()}</h1>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-xs">
+              <span className="font-semibold text-slate-400 hidden md:inline">SubFlow</span>
+              <span className="text-slate-300 hidden md:inline">/</span>
+              <h1 className="font-bold text-slate-900 text-xs sm:text-sm tracking-tight truncate max-w-[110px] sm:max-w-none">
+                {getPageTitle()}
+              </h1>
+              <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Live
+                <span className="hidden xs:inline">Live</span>
               </span>
             </div>
           </div>
@@ -171,9 +185,9 @@ export function Header({ onOpenAiAssistant, title }: HeaderProps) {
           </div>
 
           {/* Right: Actions, Utilities, & Profile */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Primary Action Group */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => setWorkbookOpen(true)}
                 className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 shadow-2xs transition-all active:scale-95"
@@ -185,11 +199,11 @@ export function Header({ onOpenAiAssistant, title }: HeaderProps) {
 
               <button
                 onClick={onOpenAiAssistant}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-600/25 transition-all active:scale-95"
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-600/25 transition-all active:scale-95"
                 title="Launch Analytics Copilot"
               >
                 <BarChart2 className="h-3.5 w-3.5 text-white" />
-                <span>Analytics Copilot</span>
+                <span className="hidden sm:inline">Analytics </span>Copilot
               </button>
             </div>
 
@@ -289,10 +303,10 @@ export function Header({ onOpenAiAssistant, title }: HeaderProps) {
         {/* Tier 2: Dedicated Workspace & Model Menu Toolbar */}
         <div
           ref={menuRef}
-          className="h-9 px-6 border-t border-slate-200/70 bg-slate-50/60 backdrop-blur-sm flex items-center justify-between text-xs"
+          className="h-9 px-3.5 sm:px-6 border-t border-slate-200/70 bg-slate-50/60 backdrop-blur-sm flex items-center justify-between text-xs overflow-hidden"
         >
-          {/* Left: Interactive Menu Bar */}
-          <div className="flex items-center gap-1 font-medium text-slate-600">
+          {/* Left: Interactive Menu Bar (Horizontal swipeable on mobile) */}
+          <div className="flex items-center gap-1 font-medium text-slate-600 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap py-1">
             {/* File Menu */}
             <div className="relative">
               <button
