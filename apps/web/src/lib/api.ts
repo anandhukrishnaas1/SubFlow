@@ -241,7 +241,292 @@ let demoStore: any = {
   ],
 };
 
+function getNewUserList(key: string): any[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function setNewUserList(key: string, items: any[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(key, JSON.stringify(items));
+  } catch {
+    // Ignore storage limits
+  }
+}
+
+export function getNewUserKpis(): any {
+  const subs = getNewUserList('subflow_user_subs');
+  const pays = getNewUserList('subflow_user_pays');
+  const invs = getNewUserList('subflow_user_invs');
+  const custs = getNewUserList('subflow_user_custs');
+
+  let activeSubs = 0;
+  let mrr = 0;
+  subs.forEach((s: any) => {
+    if (s.status === 'active') {
+      activeSubs++;
+      const val = Number(s.total) || 0;
+      if (s.billingInterval === 'yearly') mrr += val / 12;
+      else if (s.billingInterval === 'weekly') mrr += val * 4.33;
+      else if (s.billingInterval === 'daily') mrr += val * 30;
+      else mrr += val;
+    }
+  });
+
+  let totalRevenue = 0;
+  pays.forEach((p: any) => {
+    totalRevenue += Number(p.amount) || 0;
+  });
+
+  let outstanding = 0;
+  let overdue = 0;
+  const now = new Date();
+  invs.forEach((inv: any) => {
+    if (inv.status !== 'paid' && inv.status !== 'cancelled') {
+      outstanding += Number(inv.outstandingAmount ?? inv.total) || 0;
+      if (inv.dueDate && new Date(inv.dueDate) < now) {
+        overdue++;
+      }
+    }
+  });
+
+  return {
+    totalCustomers: custs.length,
+    activeSubscriptions: activeSubs,
+    mrr: Math.round(mrr * 100) / 100,
+    arr: Math.round(mrr * 12 * 100) / 100,
+    totalRevenue: Math.round(totalRevenue * 100) / 100,
+    outstandingPayments: Math.round(outstanding * 100) / 100,
+    overdueInvoices: overdue,
+    upcomingRenewals: 0,
+    lastUpdated: new Date().toISOString(),
+  };
+}
+
+function handleNewUserWorkspace(endpoint: string, options: RequestInit = {}): any {
+  const path = endpoint.split('?')[0];
+  const method = (options.method || 'GET').toUpperCase();
+
+  if (path === '/analytics/kpis') {
+    return getNewUserKpis();
+  }
+
+  if (path === '/analytics/revenue-trends') {
+    const kpis = getNewUserKpis();
+    return [
+      { month: 'Jun', billed: 0, collected: 0, revenue: 0 },
+      { month: 'Jul', billed: 0, collected: 0, revenue: 0 },
+      { month: 'Aug', billed: 0, collected: 0, revenue: 0 },
+      { month: 'Sep', billed: 0, collected: 0, revenue: 0 },
+      { month: 'Oct', billed: 0, collected: 0, revenue: 0 },
+      { month: 'Nov', billed: kpis.totalRevenue, collected: kpis.totalRevenue, revenue: kpis.totalRevenue },
+    ];
+  }
+
+  if (path === '/analytics/subscription-breakdown') {
+    const subs = getNewUserList('subflow_user_subs');
+    return {
+      total: subs.length,
+      statusCounts: {
+        active: subs.filter((s: any) => s.status === 'active').length,
+        paused: subs.filter((s: any) => s.status === 'paused').length,
+        confirmed: subs.filter((s: any) => s.status === 'confirmed').length,
+        cancelled: subs.filter((s: any) => s.status === 'cancelled').length,
+      },
+    };
+  }
+
+  if (path === '/subscriptions') {
+    const subs = getNewUserList('subflow_user_subs');
+    if (method === 'POST') {
+      const body = JSON.parse((options.body as string) || '{}');
+      const nowIso = new Date().toISOString();
+      const nextDate = new Date();
+      nextDate.setMonth(nextDate.getMonth() + 1);
+      const sub = {
+        id: `sub_${Date.now()}`,
+        number: `SUB-${nowIso.slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+        status: 'active',
+        autoRenew: true,
+        renewalCount: 0,
+        startDate: nowIso,
+        nextBillingDate: nextDate.toISOString(),
+        recurringTotal: Number(body.total) || 0,
+        ...body,
+      };
+      subs.unshift(sub);
+      setNewUserList('subflow_user_subs', subs);
+
+      // Also generate initial invoice for the new subscription
+      const invs = getNewUserList('subflow_user_invs');
+      const inv = {
+        id: `inv_${Date.now()}`,
+        number: `INV-${nowIso.slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+        subscriptionId: sub.id,
+        subscriptionNumber: sub.number,
+        customerId: sub.customerId,
+        customerName: sub.customerName,
+        customerEmail: sub.customerEmail,
+        status: 'confirmed',
+        issueDate: nowIso,
+        dueDate: nextDate.toISOString(),
+        subtotal: sub.subtotal || sub.total,
+        taxAmount: sub.taxAmount || 0,
+        discountAmount: sub.discountAmount || 0,
+        total: sub.total,
+        paidAmount: 0,
+        outstandingAmount: sub.total,
+        items: sub.items || [],
+      };
+      invs.unshift(inv);
+      setNewUserList('subflow_user_invs', invs);
+
+      return sub;
+    }
+    return subs;
+  }
+
+  if (path.startsWith('/subscriptions/')) {
+    const parts = path.split('/');
+    const id = parts[2];
+    const action = parts[3];
+    const subs = getNewUserList('subflow_user_subs');
+    const sub = subs.find((s: any) => s.id === id);
+    if (sub && action) {
+      if (action === 'activate') sub.status = 'active';
+      if (action === 'pause') sub.status = 'paused';
+      if (action === 'cancel') sub.status = 'cancelled';
+      if (action === 'confirm') sub.status = 'confirmed';
+      setNewUserList('subflow_user_subs', subs);
+      return sub;
+    }
+    return sub || null;
+  }
+
+  if (path === '/invoices') {
+    const invs = getNewUserList('subflow_user_invs');
+    if (method === 'POST') {
+      const body = JSON.parse((options.body as string) || '{}');
+      const nowIso = new Date().toISOString();
+      const inv = {
+        id: `inv_${Date.now()}`,
+        number: `INV-${nowIso.slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+        status: 'confirmed',
+        issueDate: nowIso,
+        paidAmount: 0,
+        outstandingAmount: Number(body.total) || 0,
+        ...body,
+      };
+      invs.unshift(inv);
+      setNewUserList('subflow_user_invs', invs);
+      return inv;
+    }
+    return invs;
+  }
+
+  if (path === '/payments') {
+    const pays = getNewUserList('subflow_user_pays');
+    if (method === 'POST') {
+      const body = JSON.parse((options.body as string) || '{}');
+      const pay = {
+        id: `pay_${Date.now()}`,
+        paymentDate: new Date().toISOString(),
+        ...body,
+      };
+      pays.unshift(pay);
+      setNewUserList('subflow_user_pays', pays);
+
+      // Settle invoice if provided
+      if (body.invoiceId || body.invoiceNumber) {
+        const invs = getNewUserList('subflow_user_invs');
+        const inv = invs.find((i: any) => i.id === body.invoiceId || i.number === body.invoiceNumber);
+        if (inv) {
+          inv.paidAmount = (Number(inv.paidAmount) || 0) + (Number(pay.amount) || 0);
+          inv.outstandingAmount = Math.max(0, (Number(inv.total) || 0) - inv.paidAmount);
+          if (inv.outstandingAmount === 0) inv.status = 'paid';
+          setNewUserList('subflow_user_invs', invs);
+        }
+      }
+
+      return pay;
+    }
+    return pays;
+  }
+
+  if (path === '/customers') {
+    const custs = getNewUserList('subflow_user_custs');
+    if (method === 'POST') {
+      const body = JSON.parse((options.body as string) || '{}');
+      const cust = {
+        id: `cust_${Date.now()}`,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        ...body,
+      };
+      custs.unshift(cust);
+      setNewUserList('subflow_user_custs', custs);
+      return cust;
+    }
+    return custs;
+  }
+
+  if (path === '/quotations') {
+    const quotes = getNewUserList('subflow_user_quotes');
+    if (method === 'POST') {
+      const body = JSON.parse((options.body as string) || '{}');
+      const now = new Date();
+      const quote = {
+        id: `quo_${Date.now()}`,
+        number: `QUO-${now.toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+        status: 'draft',
+        createdAt: now.toISOString(),
+        ...body,
+      };
+      quotes.unshift(quote);
+      setNewUserList('subflow_user_quotes', quotes);
+      return quote;
+    }
+    return quotes;
+  }
+
+  if (path === '/activities') {
+    const subs = getNewUserList('subflow_user_subs');
+    if (subs.length === 0) {
+      return [
+        {
+          id: 'act_0',
+          action: 'WORKSPACE_INITIALIZED',
+          description: 'Fresh enterprise workspace initialized. All metrics in default idle state.',
+          createdAt: new Date().toISOString(),
+        },
+      ];
+    }
+    return [
+      {
+        id: `act_${Date.now()}`,
+        action: 'SUBSCRIPTION_CREATED',
+        description: `Created subscription ${subs[0].number} for ${subs[0].customerName || 'customer'}`,
+        createdAt: subs[0].startDate || new Date().toISOString(),
+      },
+    ];
+  }
+
+  // Fallback to standard catalogs for products, plans, taxes, discounts
+  return handleFallback(endpoint, options);
+}
+
 async function fetchFromApi(endpoint: string, options: RequestInit = {}) {
+  // If this session belongs to a freshly registered user, serve their isolated idle workspace
+  if (typeof window !== 'undefined' && localStorage.getItem('subflow_is_new_user') === 'true') {
+    return handleNewUserWorkspace(endpoint, options);
+  }
+
   const token = typeof window !== 'undefined' ? localStorage.getItem('subflow_token') || 'demo-admin-token' : 'demo-admin-token';
   const role = typeof window !== 'undefined' ? localStorage.getItem('subflow_role') || 'admin' : 'admin';
   const uid = typeof window !== 'undefined' ? localStorage.getItem('subflow_uid') || 'demo-admin-uid' : 'demo-admin-uid';

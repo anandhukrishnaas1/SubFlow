@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   ShoppingCart,
   Share2,
@@ -116,6 +117,40 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
+
+          {/* Clean Idle State Welcome Card for New Accounts */}
+          {totalSubs === 0 && Number(kpis?.totalRevenue || 0) === 0 && (
+            <div className="bg-white rounded-3xl p-6 border border-[#e5e2da] shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in duration-200">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+                    Workspace Status: Ready &amp; Idle (Default Zero State)
+                  </span>
+                </div>
+                <h3 className="text-base font-bold text-stone-900">
+                  Welcome to your new SubFlow workspace!
+                </h3>
+                <p className="text-xs text-stone-500 max-w-2xl leading-relaxed font-medium">
+                  All telemetry counters, revenue metrics, and recurring contracts are initialized at clean zero. You can now perform actions according to your role: create products, assign subscription plans, register customers, or generate your first invoice.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap shrink-0">
+                <Link
+                  href="/subscriptions"
+                  className="px-4 py-2 rounded-full text-xs font-bold text-white bg-stone-900 hover:bg-orange-600 transition-colors shadow-2xs"
+                >
+                  Create Subscription
+                </Link>
+                <Link
+                  href="/customers"
+                  className="px-4 py-2 rounded-full text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 transition-colors border border-stone-200"
+                >
+                  Add Customer
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Top 4 Metric Cards Row with REAL Business Values */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">

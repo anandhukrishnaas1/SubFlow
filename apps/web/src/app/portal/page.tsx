@@ -185,6 +185,20 @@ export default function CustomerPortalPage() {
                 </div>
               </div>
             ))}
+
+            {subscriptions.length === 0 && (
+              <div className="col-span-2 bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-3 shadow-2xs">
+                <div className="h-12 w-12 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center mx-auto border border-orange-100">
+                  <Repeat className="h-6 w-6" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-slate-900">No active subscriptions yet</h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    Your subscriber account is initialized in an idle state. You do not have any active subscriptions.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
@@ -207,6 +221,17 @@ export default function CustomerPortalPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
+                {invoices.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="text-center py-8 text-slate-400">
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        <FileText className="h-5 w-5 text-slate-300" />
+                        <span className="font-semibold text-slate-600">No billing statements yet</span>
+                        <span className="text-[11px] text-slate-400">Invoices will appear here once generated.</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
                 {invoices.map((inv: any) => {
                   const isUnpaid = inv.status !== 'paid' && Number(inv.outstandingAmount ?? inv.total) > 0;
                   return (

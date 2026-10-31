@@ -23,6 +23,7 @@ export interface UserProfile {
   role: UserRole | 'admin' | 'staff' | 'customer';
   company?: string;
   photoURL?: string | null;
+  isNewUser?: boolean;
 }
 
 interface AuthContextType {
@@ -95,12 +96,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           const savedRole = (localStorage.getItem('subflow_role') as any) || 'admin';
+          const isNew = localStorage.getItem('subflow_is_new_user') === 'true';
           const profile: UserProfile = {
             uid: fbUser.uid,
             email: fbUser.email || 'user@subflow.io',
             displayName: fbUser.displayName || fbUser.email?.split('@')[0] || 'User',
             role: savedRole,
             photoURL: fbUser.photoURL,
+            isNewUser: isNew,
           };
 
           setUser(profile);
@@ -115,8 +118,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const isAuthenticated = localStorage.getItem('subflow_authenticated') === 'true';
         if (isAuthenticated) {
           const savedRole = localStorage.getItem('subflow_role') || 'admin';
-          const active = DEMO_USERS[savedRole] || DEMO_USERS.admin;
-          setUser(active);
+          const isNew = localStorage.getItem('subflow_is_new_user') === 'true';
+          if (isNew) {
+            const profile: UserProfile = {
+              uid: localStorage.getItem('subflow_uid') || `usr_${Date.now()}`,
+              email: localStorage.getItem('subflow_email') || 'new.user@subflow.io',
+              displayName: localStorage.getItem('subflow_name') || 'New User',
+              role: savedRole as any,
+              isNewUser: true,
+            };
+            setUser(profile);
+          } else {
+            const active = DEMO_USERS[savedRole] || DEMO_USERS.admin;
+            setUser(active);
+          }
         } else {
           // Unauthenticated state: user cannot access protected routes until sign-in
           setUser(null);
@@ -128,8 +143,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const isAuthenticated = localStorage.getItem('subflow_authenticated') === 'true';
       if (isAuthenticated) {
         const savedRole = localStorage.getItem('subflow_role') || 'admin';
-        const active = DEMO_USERS[savedRole] || DEMO_USERS.admin;
-        setUser(active);
+        const isNew = localStorage.getItem('subflow_is_new_user') === 'true';
+        if (isNew) {
+          const profile: UserProfile = {
+            uid: localStorage.getItem('subflow_uid') || `usr_${Date.now()}`,
+            email: localStorage.getItem('subflow_email') || 'new.user@subflow.io',
+            displayName: localStorage.getItem('subflow_name') || 'New User',
+            role: savedRole as any,
+            isNewUser: true,
+          };
+          setUser(profile);
+        } else {
+          const active = DEMO_USERS[savedRole] || DEMO_USERS.admin;
+          setUser(active);
+        }
       } else {
         setUser(null);
       }
@@ -153,11 +180,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('subflow_role', role);
         localStorage.setItem('subflow_uid', credential.user.uid);
 
+        const isNew = localStorage.getItem('subflow_is_new_user') === 'true';
         const profile: UserProfile = {
           uid: credential.user.uid,
           email: credential.user.email || email,
           displayName: credential.user.displayName || email.split('@')[0],
           role: role as any,
+          isNewUser: isNew,
         };
         setUser(profile);
         return profile;
@@ -178,12 +207,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             ? 'customer'
             : 'admin';
 
+          localStorage.removeItem('subflow_is_new_user');
           const demoUser = DEMO_USERS[detectedRole] || DEMO_USERS.admin;
           const profile: UserProfile = {
             ...demoUser,
             email,
             displayName: email.split('@')[0],
             role: detectedRole,
+            isNewUser: false,
           };
           setUser(profile);
           localStorage.setItem('subflow_authenticated', 'true');
@@ -207,6 +238,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   ): Promise<UserProfile> => {
     setLoading(true);
     try {
+      // Mark as a newly registered user and initialize clean zero state
+      localStorage.setItem('subflow_is_new_user', 'true');
+      localStorage.setItem('subflow_name', name || email.split('@')[0]);
+      localStorage.setItem('subflow_email', email);
+      localStorage.setItem('subflow_role', role);
+      localStorage.setItem('subflow_user_subs', JSON.stringify([]));
+      localStorage.setItem('subflow_user_invs', JSON.stringify([]));
+      localStorage.setItem('subflow_user_pays', JSON.stringify([]));
+      localStorage.setItem('subflow_user_custs', JSON.stringify([]));
+      localStorage.setItem('subflow_user_quotes', JSON.stringify([]));
+
       try {
         const { auth } = getFirebaseClient();
         const credential = await createUserWithEmailAndPassword(auth, email, password);
@@ -220,7 +262,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const token = await credential.user.getIdToken();
         localStorage.setItem('subflow_token', token);
         localStorage.setItem('subflow_authenticated', 'true');
-        localStorage.setItem('subflow_role', role);
         localStorage.setItem('subflow_uid', credential.user.uid);
 
         const profile: UserProfile = {
@@ -228,24 +269,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: credential.user.email || email,
           displayName: name || email.split('@')[0],
           role: role as any,
+          isNewUser: true,
         };
         setUser(profile);
         return profile;
       } catch (fbErr: any) {
         if (fbErr.code === 'auth/email-already-in-use') {
-          // Gracefully sign in if account already registered
           return await login(email, password, role);
         }
-        // Fallback for local demo/evaluation accounts
+        // Fallback for local account initialization
         const profile: UserProfile = {
           uid: `usr_${Date.now()}`,
           email,
           displayName: name || email.split('@')[0],
           role: role as any,
+          isNewUser: true,
         };
         setUser(profile);
         localStorage.setItem('subflow_authenticated', 'true');
-        localStorage.setItem('subflow_role', role);
         localStorage.setItem('subflow_uid', profile.uid);
         return profile;
       }
@@ -320,7 +361,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginWithDemo = (role: 'admin' | 'staff' | 'customer') => {
-    const nextUser = DEMO_USERS[role] || DEMO_USERS.admin;
+    localStorage.removeItem('subflow_is_new_user');
+    localStorage.removeItem('subflow_name');
+    localStorage.removeItem('subflow_email');
+    const demoBase = DEMO_USERS[role] || DEMO_USERS.admin;
+    const nextUser: UserProfile = { ...demoBase, isNewUser: false };
     setUser(nextUser);
     localStorage.setItem('subflow_authenticated', 'true');
     localStorage.setItem('subflow_role', nextUser.role);
@@ -339,9 +384,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('subflow_token');
     localStorage.removeItem('subflow_role');
     localStorage.removeItem('subflow_uid');
+    localStorage.removeItem('subflow_is_new_user');
+    localStorage.removeItem('subflow_name');
+    localStorage.removeItem('subflow_email');
   };
 
   const switchRole = (role: 'admin' | 'staff' | 'customer') => {
+    const isNew = localStorage.getItem('subflow_is_new_user') === 'true';
+    if (isNew) {
+      setUser((prev) => (prev ? { ...prev, role } : null));
+      localStorage.setItem('subflow_role', role);
+      return;
+    }
     const nextUser = DEMO_USERS[role] || DEMO_USERS.admin;
     setUser(nextUser);
     localStorage.setItem('subflow_authenticated', 'true');

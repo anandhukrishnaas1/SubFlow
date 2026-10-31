@@ -363,6 +363,10 @@ export default function LoginPage() {
                   onClick={() => {
                     setMode('signin');
                     setError(null);
+                    if (!email) {
+                      setEmail('admin@subflow.io');
+                      setPassword('admin_pass_2026');
+                    }
                   }}
                   className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${
                     mode === 'signin'
@@ -377,6 +381,10 @@ export default function LoginPage() {
                   onClick={() => {
                     setMode('register');
                     setError(null);
+                    if (email === 'admin@subflow.io') {
+                      setEmail('');
+                      setPassword('');
+                    }
                   }}
                   className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${
                     mode === 'register'
@@ -501,6 +509,40 @@ export default function LoginPage() {
                     </p>
                   )}
                 </div>
+
+                {/* Account Role Selector (Register mode only) */}
+                {mode === 'register' && (
+                  <div className="space-y-1.5 pt-1">
+                    <label className="block text-xs font-bold text-stone-700">
+                      Select Your Workspace Role
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { id: 'admin', label: 'Super Admin', desc: 'Full Console' },
+                        { id: 'staff', label: 'Billing Ops', desc: 'Invoices & Ops' },
+                        { id: 'customer', label: 'Subscriber', desc: 'Client Portal' },
+                      ].map((r) => (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => setRole(r.id as any)}
+                          className={`py-2 px-1.5 rounded-xl text-center border transition-all ${
+                            role === r.id
+                              ? 'bg-orange-50 border-orange-500 text-orange-950 font-bold ring-1 ring-orange-500 shadow-2xs'
+                              : 'bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100 font-medium'
+                          }`}
+                        >
+                          <div className="text-[11px] font-bold">{r.label}</div>
+                          <div className="text-[9px] text-stone-400 font-medium">{r.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 text-[11px] text-amber-900 font-medium flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
+                      <span>Fresh Account: All telemetry & revenue values start at default zero (idle state).</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Remember Me Checkbox */}
                 <div className="flex items-center justify-between pt-0.5">
