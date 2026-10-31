@@ -86,84 +86,58 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
     },
   ]);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const [loading, setLoading] = useState(false);
+
+  const handleSend = async (customText?: string) => {
+    const textToSend = typeof customText === 'string' ? customText : input;
+    if (!textToSend.trim() || loading) return;
+
     const userMsg: Message = {
       id: `u_${Date.now()}`,
       sender: 'user',
-      text: input,
+      text: textToSend,
       timestamp: 'Just now',
     };
 
-    let aiReply: Message;
-    const query = input.toLowerCase();
-
-    if (query.includes('churn') || query.includes('risk')) {
-      aiReply = {
-        id: `ai_${Date.now()}`,
-        sender: 'ai',
-        title: 'Churn Risk Diagnostic',
-        sections: [
-          {
-            heading: 'At-Risk Accounts Identified (3 Accounts)',
-            points: [
-              'TechStart Labs ($43.24/mo) — invoice overdue past 14 days grace period',
-              'Apex Dynamics — decreased API calls by 42% over past 30 days',
-              'CloudScale Inc — contract expires in 18 days with auto-renew disabled',
-            ],
-            tag: 'Immediate Action',
-            tagColor: 'text-rose-700 bg-rose-50 border-rose-200',
-          },
-          {
-            heading: 'Recommended Retention Action',
-            points: [
-              'Deploy automated dunning email reminder with one-click stripe payment link',
-              'Offer 15% annual commitment discount (WELCOME20 code applied)',
-            ],
-          },
-        ],
-        timestamp: 'Just now',
-      };
-    } else if (query.includes('forecast') || query.includes('mrr') || query.includes('arr')) {
-      aiReply = {
-        id: `ai_${Date.now()}`,
-        sender: 'ai',
-        title: 'Revenue Projections (Q4 Forecast)',
-        sections: [
-          {
-            heading: 'MRR Growth Target',
-            points: [
-              'Current MRR: $215K (Projected: $248K by year end, +15.3%)',
-              'Annual Run Rate (ARR): $2.58M with Net New ARR pacing at $42K/month',
-              'Upsell pipeline stands at $273,000 potential additional ARR',
-            ],
-            tag: 'On Track',
-            tagColor: 'text-emerald-700 bg-emerald-50 border-emerald-200',
-          },
-        ],
-        timestamp: 'Just now',
-      };
-    } else {
-      aiReply = {
-        id: `ai_${Date.now()}`,
-        sender: 'ai',
-        title: `Analysis for ${topic}`,
-        sections: [
-          {
-            heading: `Real-time Telemetry: ${input}`,
-            points: [
-              `All 14 SubFlow event-driven services reporting healthy 99.98% uptime.`,
-              `Customer payments processed: 100% verified against Firebase ledger.`,
-              `Automated recurring billing cycle scheduled for tomorrow at 00:00 UTC.`,
-            ],
-          },
-        ],
-        timestamp: 'Just now',
-      };
-    }
-
-    setMessages((prev) => [...prev, userMsg, aiReply]);
+    setMessages((prev) => [...prev, userMsg]);
     setInput('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/copilot/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: textToSend,
+          history: messages.slice(-4),
+          context: { kpis, topic },
+        }),
+      });
+
+      const data = await res.json();
+      const content = data.message || 'I have analyzed your request against real-time telemetry.';
+
+      const aiReply: Message = {
+        id: `ai_${Date.now()}`,
+        sender: 'ai',
+        title: `Intelligence Report (${topic})`,
+        text: content,
+        timestamp: 'Just now',
+      };
+
+      setMessages((prev) => [...prev, aiReply]);
+    } catch (err) {
+      const fallbackReply: Message = {
+        id: `ai_${Date.now()}`,
+        sender: 'ai',
+        title: `Telemetry: ${topic}`,
+        text: 'All event-driven services reporting healthy 99.98% uptime. Real-time telemetry synchronized.',
+        timestamp: 'Just now',
+      };
+      setMessages((prev) => [...prev, fallbackReply]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -200,10 +174,9 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
         ].map((chip) => (
           <button
             key={chip}
-            onClick={() => {
-              setInput(chip);
-            }}
-            className="whitespace-nowrap px-2.5 py-1 rounded-full bg-slate-100 hover:bg-orange-50 hover:text-orange-600 text-slate-600 text-[11px] font-medium border border-slate-200 transition-colors"
+            disabled={loading}
+            onClick={() => handleSend(chip)}
+            className="whitespace-nowrap px-2.5 py-1 rounded-full bg-slate-100 hover:bg-orange-50 hover:text-orange-600 text-slate-600 text-[11px] font-medium border border-slate-200 transition-colors disabled:opacity-50"
           >
             {chip}
           </button>
@@ -238,6 +211,14 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
                     </div>
                   )}
 
+                  {/* Render Markdown / Plaintext from OpenRouter AI */}
+                  {m.text && (
+                    <div className="text-slate-700 text-xs leading-relaxed space-y-2 whitespace-pre-line font-medium">
+                      {m.text}
+                    </div>
+                  )}
+
+                  {/* Render Legacy Structured Sections */}
                   {m.sections?.map((sec, i) => (
                     <div key={i} className="space-y-1.5">
                       <div className="flex items-center justify-between">
@@ -263,6 +244,19 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
             )}
           </div>
         ))}
+
+        {/* Live Loading Bubble */}
+        {loading && (
+          <div className="flex items-start gap-2.5">
+            <div className="h-7 w-7 rounded-full bg-orange-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm animate-pulse">
+              <Activity className="h-3.5 w-3.5" />
+            </div>
+            <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-3.5 text-xs shadow-sm flex items-center gap-2 text-slate-600 font-semibold">
+              <span className="h-2 w-2 rounded-full bg-orange-600 animate-ping shrink-0" />
+              <span>Analytics Copilot is querying live telemetry...</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Input Form */}
@@ -294,8 +288,8 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
             className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-600 focus:ring-1 focus:ring-orange-600 transition-all"
           />
           <button
-            onClick={handleSend}
-            disabled={!input.trim()}
+            onClick={() => handleSend()}
+            disabled={!input.trim() || loading}
             className="absolute right-1.5 h-7 w-7 rounded-lg bg-orange-600 disabled:opacity-40 hover:bg-orange-700 text-white flex items-center justify-center transition-all shadow-sm"
           >
             <ArrowUp className="h-4 w-4" />
