@@ -41,47 +41,10 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
   const [topic, setTopic] = useState<'Accounts' | 'Invoices' | 'Retention'>('Accounts');
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: 'm1',
-      sender: 'user',
-      text: 'summarize key takeaways from this dashboard for me',
-      timestamp: 'Just now',
-    },
-    {
-      id: 'm2',
+      id: 'welcome',
       sender: 'ai',
-      title: 'Key Takeaways',
-      sections: [
-        {
-          heading: 'Strong Customer Growth',
-          points: [
-            'Active accounts increased 25% month-over-month',
-            'Expansion revenue contributing significantly to MRR growth ($215K reached)',
-            'Average contract value (ACV) remains stable at $6.8K',
-          ],
-          tag: 'Growth',
-          tagColor: 'text-emerald-700 bg-emerald-50 border-emerald-200',
-        },
-        {
-          heading: 'Revenue Performance Risks',
-          points: [
-            'MRR growth velocity slightly tapered in second half of the month',
-            'Enterprise churn increased from 3.1% to 4.6% in select cohorts',
-            'Outstanding invoices total $52.03k across 2 flagged accounts',
-          ],
-          tag: 'Risk',
-          tagColor: 'text-rose-700 bg-rose-50 border-rose-200',
-        },
-        {
-          heading: 'Retention Trends',
-          points: [
-            'Net Revenue Retention (NRR) holds at healthy 108.4%',
-            'Expansion revenue from Pro Analytics add-on is offsetting contraction',
-            'Upcoming renewal queue is clear with 24 accounts eligible for upgrade',
-          ],
-          tag: 'Retention',
-          tagColor: 'text-orange-700 bg-orange-50 border-orange-200',
-        },
-      ],
+      title: 'SubFlow Analytics Copilot',
+      text: 'Welcome! I am connected to live telemetry and powered by OpenRouter LLM. Ask me about your real-time MRR, churn risks, invoice receivables, or contract renewals.',
       timestamp: 'Just now',
     },
   ]);
