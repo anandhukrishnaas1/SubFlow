@@ -81,22 +81,15 @@ export function Sidebar() {
             />
           </Link>
 
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Live
-            </span>
-
-            {isMobile && (
-              <button
-                onClick={closeMobile}
-                className="h-8 w-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-900"
-                aria-label="Close navigation"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+          {isMobile && (
+            <button
+              onClick={closeMobile}
+              className="h-8 w-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-900"
+              aria-label="Close navigation"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Navigation links */}

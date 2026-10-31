@@ -159,13 +159,9 @@ export function Header({ onOpenAiAssistant, title }: HeaderProps) {
             <div className="flex items-center gap-1.5 sm:gap-2 text-xs">
               <span className="font-semibold text-slate-400 hidden md:inline">SubFlow</span>
               <span className="text-slate-300 hidden md:inline">/</span>
-              <h1 className="font-bold text-slate-900 text-xs sm:text-sm tracking-tight truncate max-w-[110px] sm:max-w-none">
+              <h1 className="font-bold text-slate-900 text-xs sm:text-sm tracking-tight truncate max-w-[140px] sm:max-w-none">
                 {getPageTitle()}
               </h1>
-              <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="hidden xs:inline">Live</span>
-              </span>
             </div>
           </div>
 
@@ -540,16 +536,13 @@ export function Header({ onOpenAiAssistant, title }: HeaderProps) {
           {/* Right: Telemetry & Workspace Status */}
           <div className="hidden sm:flex items-center gap-3 text-[11px] text-slate-500 font-medium">
             {modelMessage ? (
-              <span className="text-blue-600 font-semibold flex items-center gap-1 animate-pulse">
+              <span className="text-blue-600 font-semibold flex items-center gap-1">
                 <Check className="h-3.5 w-3.5 text-blue-600" />
                 {modelMessage}
               </span>
             ) : (
               <>
-                <span className="flex items-center gap-1.5 text-slate-500">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  Firestore Event Stream Active
-                </span>
+                <span className="text-slate-500 font-medium">Firestore Event Stream Active</span>
                 <span className="text-slate-300">·</span>
                 <span className="text-slate-400">Trailing 30 Days</span>
               </>

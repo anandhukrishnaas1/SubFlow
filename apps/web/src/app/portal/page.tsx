@@ -40,7 +40,7 @@ export default function CustomerPortalPage() {
       {/* Top Banner & Switch Back to Admin */}
       <div className="bg-blue-50 border-b border-blue-200/80 px-6 py-2.5 flex items-center justify-between text-xs">
         <div className="flex items-center gap-2 text-blue-900 font-semibold">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
           <span>Customer Self-Service Billing Portal</span>
           <span className="text-slate-400">|</span>
           <span className="text-slate-700">{user?.company || user?.displayName || 'Acme Corporation'}</span>

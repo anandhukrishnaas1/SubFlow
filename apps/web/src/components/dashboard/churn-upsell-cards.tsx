@@ -44,7 +44,7 @@ export function ChurnUpsellCards() {
         <div>
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-bold text-slate-900 tracking-tight">Churn Risk Forecast</h4>
-            <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+            <span className="h-2 w-2 rounded-full bg-rose-500" />
           </div>
 
           <div className="relative h-44 w-full flex items-center justify-center my-2">
