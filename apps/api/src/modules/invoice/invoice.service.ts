@@ -91,7 +91,7 @@ export class InvoiceService {
   }
 
   async create(dto: any): Promise<any> {
-    // Check idempotency key if provided
+    // 1. Check idempotency key if provided
     if (dto.idempotencyKey) {
       const existing = await this.collection
         .where('idempotencyKey', '==', dto.idempotencyKey)
@@ -106,6 +106,28 @@ export class InvoiceService {
           id: existingDoc.id,
           ...existingData,
           items: items.length > 0 ? items : existingData.items || [],
+          _idempotent: true,
+        };
+      }
+    }
+
+    // 2. Duplicate Charge Detection: Check if invoice already exists for same subscription & period
+    if (dto.subscriptionId && dto.billingPeriodStart) {
+      const duplicatePeriod = await this.collection
+        .where('subscriptionId', '==', dto.subscriptionId)
+        .where('billingPeriodStart', '==', dto.billingPeriodStart)
+        .limit(1)
+        .get();
+
+      if (!duplicatePeriod.empty) {
+        const dupDoc = duplicatePeriod.docs[0];
+        const itemsSnap = await dupDoc.ref.collection('items').get();
+        const dupData = dupDoc.data() as any;
+        const items = itemsSnap.docs.map((i) => ({ id: i.id, ...i.data() }));
+        return {
+          id: dupDoc.id,
+          ...dupData,
+          items: items.length > 0 ? items : dupData.items || [],
           _idempotent: true,
         };
       }
