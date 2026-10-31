@@ -35,6 +35,8 @@ export default function QuotationsPage() {
     notes: '',
   });
 
+  const [conversionBanner, setConversionBanner] = useState<string | null>(null);
+
   const sendMutation = useMutation({
     mutationFn: (id: string) => api.sendQuotation(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['quotations'] }),
@@ -42,7 +44,29 @@ export default function QuotationsPage() {
 
   const acceptMutation = useMutation({
     mutationFn: (id: string) => api.acceptQuotation(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['quotations'] }),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['kpis'] });
+      const subNum = res?.convertedToSubscriptionNumber || res?.subscription?.number || res?.number || 'Active Subscription';
+      const invNum = res?.convertedInvoiceNumber || res?.invoice?.number || 'Confirmed Invoice';
+      setConversionBanner(`Quotation accepted! Auto-created subscription (${subNum}) and confirmed invoice (${invNum}).`);
+    },
+  });
+
+  const convertMutation = useMutation({
+    mutationFn: (quotationId: string) =>
+      api.convertQuotation({ quotationId, planId: 'plan_pro_monthly' }),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['kpis'] });
+      const subNum = res?.number || 'Active Subscription';
+      const invNum = res?.invoice?.number || 'Confirmed Invoice';
+      setConversionBanner(`Quotation converted into live subscription (${subNum}) with confirmed invoice (${invNum})!`);
+    },
   });
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -106,6 +130,21 @@ export default function QuotationsPage() {
             </button>
           </div>
 
+          {conversionBanner && (
+            <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span>{conversionBanner}</span>
+              </div>
+              <button
+                onClick={() => setConversionBanner(null)}
+                className="text-emerald-400 hover:text-white text-xs font-semibold"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
           {/* Quotations Table */}
           <div className="rounded-2xl border border-slate-800/80 bg-slate-900/40 backdrop-blur-xl overflow-hidden shadow-xl">
             <div className="overflow-x-auto">
@@ -129,70 +168,72 @@ export default function QuotationsPage() {
                       </td>
                     </tr>
                   ) : (
-                    quotations.map((q: any) => (
-                      <tr key={q.id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="py-3.5 px-4 font-mono font-medium text-slate-200">{q.number}</td>
-                        <td className="py-3.5 px-4">
-                          <p className="font-semibold text-white">{q.customerName}</p>
-                          <p className="text-[11px] text-slate-400">{q.customerEmail}</p>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-300">
-                          {(q.items || []).map((i: any) => i.productName).join(', ') || 'Custom Solution'}
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-400">{formatDate(q.expiresAt)}</td>
-                        <td className="py-3.5 px-4 font-bold text-white">{formatCurrency(q.total)}</td>
-                        <td className="py-3.5 px-4">
-                          <span
-                            className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase border ${
-                              q.status === 'accepted'
-                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                : q.status === 'sent'
-                                ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                                : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                            }`}
-                          >
-                            {q.status}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-right space-x-2">
-                          {q.status === 'draft' && (
-                            <button
-                              onClick={() => sendMutation.mutate(q.id)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded text-[11px] font-medium transition-colors"
+                    quotations.map((q: any) => {
+                      const isAcceptedOrConverted =
+                        q.status === 'accepted' || q.status === 'converted' || Boolean(q.convertedToSubscriptionId);
+                      return (
+                        <tr key={q.id} className="hover:bg-slate-800/30 transition-colors">
+                          <td className="py-3.5 px-4 font-mono font-medium text-slate-200">{q.number}</td>
+                          <td className="py-3.5 px-4">
+                            <p className="font-semibold text-white">{q.customerName}</p>
+                            <p className="text-[11px] text-slate-400">{q.customerEmail}</p>
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-300">
+                            {(q.items || []).map((i: any) => i.productName).join(', ') || 'Custom Solution'}
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-400">{formatDate(q.expiresAt)}</td>
+                          <td className="py-3.5 px-4 font-bold text-white">{formatCurrency(q.total)}</td>
+                          <td className="py-3.5 px-4">
+                            <span
+                              className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase border ${
+                                isAcceptedOrConverted
+                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                  : q.status === 'sent'
+                                  ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                  : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                              }`}
                             >
-                              <Send className="h-3 w-3" /> Send
-                            </button>
-                          )}
-                          {q.status !== 'accepted' && (
-                            <button
-                              onClick={() => acceptMutation.mutate(q.id)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded text-[11px] font-medium transition-colors"
-                            >
-                              <CheckCircle2 className="h-3 w-3" /> Accept
-                            </button>
-                          )}
-                          <button
-                            onClick={async () => {
-                              await api.createSubscription({
-                                customerId: q.customerId,
-                                customerName: q.customerName,
-                                customerEmail: q.customerEmail,
-                                planName: 'Converted from Quotation',
-                                billingInterval: 'monthly',
-                                quotationId: q.id,
-                                total: q.total,
-                                items: q.items,
-                              });
-                              alert(`Quotation ${q.number} converted into live active subscription!`);
-                            }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded text-[11px] font-medium transition-colors"
-                            title="Convert into live recurring subscription"
-                          >
-                            <ArrowRightCircle className="h-3 w-3" /> Convert to Sub
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                              {q.status}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-right space-x-2">
+                            {q.status === 'draft' && (
+                              <button
+                                onClick={() => sendMutation.mutate(q.id)}
+                                disabled={sendMutation.isPending}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded text-[11px] font-medium transition-colors"
+                              >
+                                <Send className="h-3 w-3" /> Send
+                              </button>
+                            )}
+                            {!isAcceptedOrConverted && (
+                              <button
+                                onClick={() => acceptMutation.mutate(q.id)}
+                                disabled={acceptMutation.isPending}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded text-[11px] font-medium transition-colors"
+                                title="Accept quote & auto-create active subscription + confirmed invoice"
+                              >
+                                <CheckCircle2 className="h-3 w-3" /> Accept
+                              </button>
+                            )}
+                            {!isAcceptedOrConverted ? (
+                              <button
+                                onClick={() => convertMutation.mutate(q.id)}
+                                disabled={convertMutation.isPending}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded text-[11px] font-medium transition-colors"
+                                title="Convert into live recurring subscription and confirmed invoice"
+                              >
+                                <ArrowRightCircle className="h-3 w-3" /> Convert to Sub
+                              </button>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded text-[11px] font-medium">
+                                <CheckCircle2 className="h-3 w-3" /> Converted
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>

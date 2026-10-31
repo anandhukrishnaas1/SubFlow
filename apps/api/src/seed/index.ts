@@ -1,11 +1,35 @@
 import * as admin from 'firebase-admin';
+import * as fs from 'fs';
 
 async function runSeed() {
   console.log('🌱 Starting SubFlow Firestore Seed...');
 
   const projectId = process.env.FIREBASE_PROJECT_ID || 'subflow-demo';
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+
   if (!admin.apps.length) {
-    admin.initializeApp({ projectId });
+    if (clientEmail && privateKey) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey: privateKey.replace(/\\n/g, '\n'),
+        }),
+        projectId,
+      });
+    } else if (serviceAccountJson) {
+      const credentials = serviceAccountJson.trim().startsWith('{')
+        ? JSON.parse(serviceAccountJson)
+        : JSON.parse(fs.readFileSync(serviceAccountJson, 'utf8'));
+      admin.initializeApp({
+        credential: admin.credential.cert(credentials),
+        projectId: credentials.project_id || projectId,
+      });
+    } else {
+      admin.initializeApp({ projectId });
+    }
   }
 
   const db = admin.firestore();
@@ -367,7 +391,54 @@ async function runSeed() {
     total: 43.24,
   });
 
-  // 7. Seed Invoices
+  // Scenario B (Missed Billing): Active subscription with past nextBillingDate and no invoice for current period
+  const pastDueDate = '2026-10-01T00:00:00.000Z';
+  const subRef3 = db.collection('subscriptions').doc('sub_global_missed');
+  await subRef3.set({
+    number: 'SUB-20261031-1003',
+    customerId: 'cust_global_logistics',
+    customerName: 'Global Logistics Partners',
+    customerEmail: 'operations@globallogistics.com',
+    planId: 'plan_pro_monthly',
+    planName: 'Professional Plan (Monthly)',
+    billingInterval: 'monthly',
+    status: 'active',
+    startDate: '2026-09-01T00:00:00.000Z',
+    nextBillingDate: pastDueDate,
+    paymentTerms: 'Net 15',
+    subtotal: 78.0,
+    taxAmount: 15.6,
+    discountAmount: 0,
+    total: 93.6,
+    createdBy: 'user_admin_001',
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  });
+
+  // Scenario D (Revenue Leakage - Paused Subscription)
+  const subRef4 = db.collection('subscriptions').doc('sub_global_paused');
+  await subRef4.set({
+    number: 'SUB-20261031-1004',
+    customerId: 'cust_global_logistics',
+    customerName: 'Global Logistics Partners',
+    customerEmail: 'operations@globallogistics.com',
+    planId: 'plan_starter_monthly',
+    planName: 'Starter Plan (Monthly)',
+    billingInterval: 'monthly',
+    status: 'paused',
+    startDate: '2026-08-01T00:00:00.000Z',
+    nextBillingDate: nextMonth,
+    paymentTerms: 'Net 15',
+    subtotal: 49.0,
+    taxAmount: 0,
+    discountAmount: 0,
+    total: 49.0,
+    createdBy: 'user_admin_001',
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  });
+
+  // 7. Seed Invoices (including Scenario A Overdue Invoice & Scenario C Idempotency Key)
   console.log('🧾 Seeding Invoices...');
   const invRef1 = db.collection('invoices').doc('inv_acme_oct');
   await invRef1.set({
@@ -380,6 +451,9 @@ async function runSeed() {
     status: 'paid',
     issueDate: nowIso,
     dueDate: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+    billingPeriodStart: '2026-10-01T00:00:00.000Z',
+    billingPeriodEnd: '2026-10-31T00:00:00.000Z',
+    idempotencyKey: 'billing-sub_acme_pro-2026-10-01',
     subtotal: 78.0,
     taxAmount: 15.6,
     discountAmount: 0,
@@ -408,6 +482,7 @@ async function runSeed() {
     total: 34.8,
   });
 
+  // Scenario A (Overdue Invoice: status = confirmed, dueDate = past, outstandingAmount > 0)
   const invRef2 = db.collection('invoices').doc('inv_techstart_oct');
   await invRef2.set({
     number: 'INV-20261031-0002',
@@ -417,8 +492,11 @@ async function runSeed() {
     customerName: 'TechStart Inc',
     customerEmail: 'billing@techstart.io',
     status: 'confirmed',
-    issueDate: nowIso,
-    dueDate: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+    issueDate: '2026-09-15T00:00:00.000Z',
+    dueDate: pastDueDate,
+    billingPeriodStart: '2026-10-01T00:00:00.000Z',
+    billingPeriodEnd: '2026-10-31T00:00:00.000Z',
+    idempotencyKey: 'billing-sub_techstart_starter-2026-10-01',
     subtotal: 49.0,
     taxAmount: 4.04,
     discountAmount: 9.8,
@@ -453,16 +531,34 @@ async function runSeed() {
     createdAt: nowIso,
   });
 
-  // 9. Seed Counters
+  // 9. Seed Quotations
+  console.log('📝 Seeding Quotations...');
+  await db.collection('quotations').doc('quo_acme_expansion').set({
+    number: 'QUO-20261031-9001',
+    customerId: 'cust_acme_corp',
+    customerName: 'Acme Corporation',
+    customerEmail: 'finance@acmecorp.com',
+    status: 'sent',
+    subtotal: 128.0,
+    taxAmount: 25.6,
+    discountAmount: 20.0,
+    total: 133.6,
+    validityDays: 30,
+    expiresAt: nextMonth,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  });
+
+  // 10. Seed Counters
   console.log('📊 Seeding Counters Analytics document for instant UI snapshots...');
   await db.collection('counters').doc('analytics').set({
     totalCustomers: 3,
-    activeSubscriptions: 2,
-    mrr: 121.24,
-    arr: 1454.88,
+    activeSubscriptions: 3,
+    mrr: 230.44,
+    arr: 2765.28,
     totalRevenue: 93.6,
     outstandingPayments: 43.24,
-    overdueInvoices: 0,
+    overdueInvoices: 1,
     upcomingRenewals: 2,
     lastUpdated: nowIso,
   });

@@ -36,7 +36,11 @@ export class FirebaseAuthGuard implements CanActivate {
     const token = authHeader.split('Bearer ')[1].trim();
 
     try {
-      const decodedToken = await this.firebaseService.getAuth().verifyIdToken(token);
+      const auth = this.firebaseService.getAuth();
+      if (!auth) {
+        throw new Error('Firebase Auth running in local in-memory mock mode');
+      }
+      const decodedToken = await auth.verifyIdToken(token);
       request.user = {
         uid: decodedToken.uid,
         email: decodedToken.email,
@@ -45,13 +49,15 @@ export class FirebaseAuthGuard implements CanActivate {
       };
       return true;
     } catch (error) {
-      // In development, handle fallback for mock/demo token
+      // In development, handle fallback for mock/demo token while respecting active role switcher
       if (process.env.NODE_ENV !== 'production' && token === 'demo-admin-token') {
+        const mockRole = (request.headers['x-mock-role'] as string) || 'admin';
+        const mockUid = (request.headers['x-mock-uid'] as string) || 'demo-admin-uid';
         request.user = {
-          uid: 'demo-admin-uid',
-          email: 'admin@subflow.io',
-          role: 'admin',
-          name: 'Demo Admin',
+          uid: mockUid,
+          email: (request.headers['x-mock-email'] as string) || 'admin@subflow.io',
+          role: mockRole,
+          name: (request.headers['x-mock-name'] as string) || 'Demo Admin',
         };
         return true;
       }

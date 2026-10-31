@@ -6,7 +6,8 @@ import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
-import { BarChart3, TrendingUp, DollarSign, Users, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
+import { AiInsightsCopilot } from '@/components/ai/ai-insights-copilot';
 import {
   ResponsiveContainer,
   BarChart,
@@ -29,14 +30,21 @@ export default function ReportsPage() {
     queryFn: () => api.getRevenueTrends(),
   });
 
-  const comparisonData = trends.length > 0 ? trends : [
-    { month: 'Jun', billed: 500, collected: 480 },
-    { month: 'Jul', billed: 750, collected: 710 },
-    { month: 'Aug', billed: 1050, collected: 990 },
-    { month: 'Sep', billed: 1250, collected: 1200 },
-    { month: 'Oct', billed: 1550, collected: 1490 },
-    { month: 'Nov', billed: 180, collected: Number(kpis.totalRevenue) || 93.6 },
-  ];
+  const comparisonData =
+    trends.length > 0
+      ? trends.map((t: any) => ({
+          month: t.month,
+          billed: t.billed ?? t.revenue ?? 0,
+          collected: t.collected ?? t.revenue ?? 0,
+        }))
+      : [
+          { month: 'Jun', billed: 500, collected: 480 },
+          { month: 'Jul', billed: 750, collected: 710 },
+          { month: 'Aug', billed: 1050, collected: 990 },
+          { month: 'Sep', billed: 1250, collected: 1200 },
+          { month: 'Oct', billed: 1550, collected: 1490 },
+          { month: 'Nov', billed: 136.84, collected: Number(kpis.totalRevenue) || 93.6 },
+        ];
 
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-100">
@@ -49,25 +57,32 @@ export default function ReportsPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
               <BarChart3 className="h-6 w-6 text-blue-500" />
-              Financial Reports & Billing Analytics
+              Financial Reports, Anomaly Detection & AI Insights
             </h1>
             <p className="text-sm text-slate-400 mt-1">
-              Deep-dive metrics across recurring cash velocity, invoice collections, and customer retention.
+              Deep-dive metrics across recurring cash velocity, invoice collections, anomaly detection, and natural-language AI business insights.
             </p>
           </div>
+
+          {/* Interactive AI Insights & Anomaly Detection Engine */}
+          <AiInsightsCopilot mode="panel" />
 
           {/* Metric Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-5 rounded-2xl border border-slate-800/80 bg-slate-900/40 backdrop-blur-xl">
               <span className="text-xs text-slate-400 uppercase font-medium">Net Collection Rate</span>
-              <p className="text-2xl font-extrabold text-emerald-400 mt-1">98.4%</p>
+              <p className="text-2xl font-extrabold text-emerald-400 mt-1">
+                {kpis.totalRevenue && (kpis.totalRevenue + (kpis.outstandingPayments || 0)) > 0
+                  ? `${Math.round((kpis.totalRevenue / (kpis.totalRevenue + (kpis.outstandingPayments || 0))) * 1000) / 10}%`
+                  : '98.4%'}
+              </p>
               <p className="text-[11px] text-slate-500 mt-1">Payments collected vs invoices billed</p>
             </div>
 
             <div className="p-5 rounded-2xl border border-slate-800/80 bg-slate-900/40 backdrop-blur-xl">
               <span className="text-xs text-slate-400 uppercase font-medium">Average Revenue Per User (ARPU)</span>
               <p className="text-2xl font-extrabold text-white mt-1">
-                {formatCurrency(kpis.mrr ? kpis.mrr / (kpis.totalCustomers || 1) : 40.41)}
+                {formatCurrency(kpis.mrr ? kpis.mrr / (kpis.totalCustomers || 1) : 60.62)}
               </p>
               <p className="text-[11px] text-slate-500 mt-1">Per active account each month</p>
             </div>

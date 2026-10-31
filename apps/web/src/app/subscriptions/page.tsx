@@ -48,6 +48,8 @@ export default function SubscriptionsPage() {
     paymentTerms: 'Due on Receipt',
   });
 
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
   // Mutations
   const activateMutation = useMutation({
     mutationFn: (id: string) => api.activateSubscription(id),
@@ -62,6 +64,29 @@ export default function SubscriptionsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
       queryClient.invalidateQueries({ queryKey: ['kpis'] });
+    },
+  });
+
+  const renewMutation = useMutation({
+    mutationFn: (id: string) => api.renewSubscription(id),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['kpis'] });
+      const invNum = res?.invoice?.number || 'Confirmed Invoice';
+      setStatusMessage(`Subscription renewed for next billing cycle! Generated confirmed invoice ${invNum}.`);
+    },
+  });
+
+  const billingRunMutation = useMutation({
+    mutationFn: () => api.triggerBillingRun(),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['kpis'] });
+      setStatusMessage(
+        `Automated billing & renewal cycle completed: ${res?.processed ?? 0} due subscription(s) processed, ${res?.invoicesCreated ?? 0} confirmed invoice(s) generated.`,
+      );
     },
   });
 
@@ -130,14 +155,40 @@ export default function SubscriptionsPage() {
               </p>
             </div>
 
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-blue-600/25 transition-all self-start sm:self-auto"
-            >
-              <Plus className="h-4 w-4" />
-              New Subscription
-            </button>
+            <div className="flex items-center gap-2.5 self-start sm:self-auto">
+              <button
+                onClick={() => billingRunMutation.mutate()}
+                disabled={billingRunMutation.isPending}
+                className="flex items-center gap-2 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold transition-all"
+                title="Run automated billing & renewal cycle for due subscriptions"
+              >
+                <Repeat className="h-3.5 w-3.5 text-emerald-400" />
+                {billingRunMutation.isPending ? 'Running Billing...' : 'Run Auto-Billing'}
+              </button>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-blue-600/25 transition-all"
+              >
+                <Plus className="h-4 w-4" />
+                New Subscription
+              </button>
+            </div>
           </div>
+
+          {statusMessage && (
+            <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span>{statusMessage}</span>
+              </div>
+              <button
+                onClick={() => setStatusMessage(null)}
+                className="text-emerald-400 hover:text-white text-xs font-semibold"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
           {/* Filter Bar */}
           <div className="flex items-center gap-2 bg-slate-900/60 p-2 rounded-xl border border-slate-800/80 w-fit">
@@ -199,7 +250,7 @@ export default function SubscriptionsPage() {
                           {formatDate(sub.nextBillingDate)}
                         </td>
                         <td className="py-3.5 px-4 font-bold text-white">
-                          {formatCurrency(sub.total)}
+                          {formatCurrency(sub.total ?? sub.recurringTotal)}
                         </td>
                         <td className="py-3.5 px-4">
                           <span
@@ -218,6 +269,16 @@ export default function SubscriptionsPage() {
                               title="Activate subscription"
                             >
                               Activate
+                            </button>
+                          )}
+                          {sub.status !== 'cancelled' && (
+                            <button
+                              onClick={() => renewMutation.mutate(sub.id)}
+                              disabled={renewMutation.isPending}
+                              className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded text-[11px] font-medium transition-colors"
+                              title="Renew subscription & generate confirmed invoice for next cycle"
+                            >
+                              Renew
                             </button>
                           )}
                           {sub.status === 'active' && (

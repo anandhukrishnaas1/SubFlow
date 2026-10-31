@@ -271,6 +271,21 @@ export class MockFirestore {
         createdAt: now,
       },
       {
+        id: 'cust_global_logistics',
+        uid: 'cust_global_logistics',
+        email: 'operations@globallogistics.com',
+        displayName: 'Global Logistics Partners',
+        company: 'Global Logistics Group',
+        phone: '+44 20 7946 0912',
+        address: '25 Bank Street',
+        city: 'London',
+        state: 'Greater London',
+        country: 'UK',
+        role: 'customer',
+        status: 'active',
+        createdAt: now,
+      },
+      {
         id: 'demo_admin_001',
         uid: 'demo_admin_001',
         email: 'admin@subflow.io',
@@ -371,7 +386,9 @@ export class MockFirestore {
       this.store.set(`plans/${pl.id}`, pl);
     }
 
-    // 4. Subscriptions
+    // 4. Subscriptions (including Scenario B Missed Billing & Scenario D Paused MRR)
+    const pastDueDate = '2026-10-01T00:00:00.000Z';
+    const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const subscriptions = [
       {
         id: 'sub_acme_pro',
@@ -384,7 +401,7 @@ export class MockFirestore {
         billingInterval: 'monthly',
         status: 'active',
         startDate: now,
-        nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        nextBillingDate: nextMonth,
         subtotal: 78.0,
         taxAmount: 15.6,
         discountAmount: 0,
@@ -406,7 +423,7 @@ export class MockFirestore {
         billingInterval: 'monthly',
         status: 'active',
         startDate: now,
-        nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        nextBillingDate: nextMonth,
         subtotal: 49.0,
         taxAmount: 4.04,
         discountAmount: 9.8,
@@ -416,13 +433,56 @@ export class MockFirestore {
         ],
         createdAt: now,
       },
+      {
+        id: 'sub_global_missed',
+        number: 'SUB-20261031-1003',
+        customerId: 'cust_global_logistics',
+        customerName: 'Global Logistics Partners',
+        customerEmail: 'operations@globallogistics.com',
+        planId: 'plan_pro_monthly',
+        planName: 'Professional Plan (Monthly)',
+        billingInterval: 'monthly',
+        status: 'active',
+        startDate: '2026-09-01T00:00:00.000Z',
+        nextBillingDate: pastDueDate,
+        subtotal: 78.0,
+        taxAmount: 15.6,
+        discountAmount: 0,
+        total: 93.6,
+        items: [
+          { productName: 'SubFlow Cloud Core', quantity: 1, unitPrice: 49.0, total: 58.8 },
+          { productName: 'Advanced Real-time Analytics', quantity: 1, unitPrice: 29.0, total: 34.8 },
+        ],
+        createdAt: now,
+      },
+      {
+        id: 'sub_global_paused',
+        number: 'SUB-20261031-1004',
+        customerId: 'cust_global_logistics',
+        customerName: 'Global Logistics Partners',
+        customerEmail: 'operations@globallogistics.com',
+        planId: 'plan_starter_monthly',
+        planName: 'Starter Plan (Monthly)',
+        billingInterval: 'monthly',
+        status: 'paused',
+        startDate: '2026-08-01T00:00:00.000Z',
+        nextBillingDate: nextMonth,
+        subtotal: 49.0,
+        taxAmount: 0,
+        discountAmount: 0,
+        total: 49.0,
+        items: [
+          { productName: 'SubFlow Cloud Core', quantity: 1, unitPrice: 49.0, total: 49.0 },
+        ],
+        createdAt: now,
+      },
     ];
 
     for (const s of subscriptions) {
       this.store.set(`subscriptions/${s.id}`, s);
     }
 
-    // 5. Invoices
+    // 5. Invoices (Scenario A Overdue Invoice & Scenario C Idempotency Key)
     const invoices = [
       {
         id: 'inv_acme_oct',
@@ -435,6 +495,8 @@ export class MockFirestore {
         status: 'paid',
         issueDate: now,
         dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        billingPeriodStart: '2026-10-01T00:00:00.000Z',
+        idempotencyKey: 'billing-sub_acme_pro-2026-10-01',
         subtotal: 78.0,
         taxAmount: 15.6,
         discountAmount: 0,
@@ -456,8 +518,10 @@ export class MockFirestore {
         customerName: 'TechStart Inc',
         customerEmail: 'billing@techstart.io',
         status: 'confirmed',
-        issueDate: now,
-        dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        issueDate: '2026-09-15T00:00:00.000Z',
+        dueDate: pastDueDate,
+        billingPeriodStart: '2026-10-01T00:00:00.000Z',
+        idempotencyKey: 'billing-sub_techstart_starter-2026-10-01',
         subtotal: 49.0,
         taxAmount: 4.04,
         discountAmount: 9.8,
@@ -527,6 +591,7 @@ export class MockFirestore {
         discountAmount: 20.0,
         total: 133.6,
         validityDays: 30,
+        expiresAt: nextMonth,
         items: [
           { productName: 'SubFlow Cloud Core (50GB)', quantity: 1, unitPrice: 69.0, total: 69.0 },
           { productName: '24/7 Dedicated Concierge Support', quantity: 1, unitPrice: 59.0, total: 59.0 },
@@ -540,13 +605,13 @@ export class MockFirestore {
 
     // 10. Counters
     this.store.set('counters/analytics', {
-      totalCustomers: 2,
-      activeSubscriptions: 2,
-      mrr: 121.24,
-      arr: 1454.88,
+      totalCustomers: 3,
+      activeSubscriptions: 3,
+      mrr: 230.44,
+      arr: 2765.28,
       totalRevenue: 93.6,
       outstandingPayments: 43.24,
-      overdueInvoices: 0,
+      overdueInvoices: 1,
       upcomingRenewals: 2,
     });
   }

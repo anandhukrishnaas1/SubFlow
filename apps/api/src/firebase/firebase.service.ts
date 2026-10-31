@@ -13,23 +13,53 @@ export class FirebaseService implements OnModuleInit {
 
   onModuleInit() {
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
     const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
     const projectId = process.env.FIREBASE_PROJECT_ID || 'subflow-demo';
 
-    if (serviceAccountJson) {
+    // Option 1: Individual env variables (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY)
+    if (clientEmail && privateKey) {
       try {
-        const credentials = JSON.parse(serviceAccountJson);
         this.app = admin.apps.length
           ? admin.app()
           : admin.initializeApp({
-              credential: admin.credential.cert(credentials),
+              credential: admin.credential.cert({
+                projectId,
+                clientEmail,
+                privateKey: privateKey.replace(/\\n/g, '\n'),
+              }),
               projectId,
               storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${projectId}.appspot.com`,
             });
         this.auth = admin.auth(this.app);
         this.db = admin.firestore(this.app);
         this.storage = admin.storage(this.app);
-        this.logger.log(`Initialized Firebase Admin with Service Account for project: ${projectId}`);
+        this.logger.log(`Initialized Firebase Admin with Client Email & Private Key for project: ${projectId}`);
+        return;
+      } catch (e) {
+        this.logger.warn(`Failed initializing with FIREBASE_CLIENT_EMAIL/PRIVATE_KEY: ${e.message}`);
+      }
+    }
+
+    // Option 2: Service account JSON string or file path
+    if (serviceAccountJson) {
+      try {
+        const credentials = serviceAccountJson.trim().startsWith('{')
+          ? JSON.parse(serviceAccountJson)
+          : require('fs').readFileSync(serviceAccountJson, 'utf8') &&
+            JSON.parse(require('fs').readFileSync(serviceAccountJson, 'utf8'));
+        this.app = admin.apps.length
+          ? admin.app()
+          : admin.initializeApp({
+              credential: admin.credential.cert(credentials),
+              projectId: credentials.project_id || projectId,
+              storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${credentials.project_id || projectId}.appspot.com`,
+            });
+        this.auth = admin.auth(this.app);
+        this.db = admin.firestore(this.app);
+        this.storage = admin.storage(this.app);
+        this.logger.log(`Initialized Firebase Admin with Service Account for project: ${credentials.project_id || projectId}`);
         return;
       } catch (e) {
         this.logger.warn(`Failed parsing FIREBASE_SERVICE_ACCOUNT_KEY: ${e.message}`);

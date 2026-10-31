@@ -1,4 +1,4 @@
-import { Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { FirebaseAuthGuard } from '../../common/guards/firebase-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -25,6 +25,16 @@ export class AnalyticsController {
   @Roles(UserRole.ADMIN, UserRole.STAFF)
   async getSubscriptionBreakdown() {
     return this.analyticsService.getSubscriptionBreakdown();
+  }
+
+  @Get('ai-insights')
+  async getAiInsights() {
+    return this.analyticsService.getAiInsights();
+  }
+
+  @Post('ai-ask')
+  async askAiInsights(@Body() body: { question: string }) {
+    return this.analyticsService.askAiQuestion(body?.question || '');
   }
 
   @Post('refresh')

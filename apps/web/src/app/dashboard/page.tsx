@@ -19,6 +19,7 @@ import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
+import { AiInsightsCopilot } from '@/components/ai/ai-insights-copilot';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -61,11 +62,11 @@ export default function DashboardPage() {
 
   // Fallback sample chart data if fresh
   const chartData = revenueTrends.length > 0 ? revenueTrends : [
-    { month: 'Jun', revenue: 420 },
-    { month: 'Jul', revenue: 680 },
-    { month: 'Aug', revenue: 950 },
-    { month: 'Sep', revenue: 1120 },
-    { month: 'Oct', revenue: 1450 },
+    { month: 'Jun', revenue: 480 },
+    { month: 'Jul', revenue: 710 },
+    { month: 'Aug', revenue: 990 },
+    { month: 'Sep', revenue: 1200 },
+    { month: 'Oct', revenue: 1490 },
     { month: 'Nov', revenue: Number(kpis.totalRevenue) || 93.6 },
   ];
 
@@ -93,7 +94,7 @@ export default function DashboardPage() {
                 </span>
               </h1>
               <p className="text-sm text-slate-400 mt-1">
-                Live metrics, recurring billing schedules, and customer cash flows.
+                Live metrics, recurring billing schedules, anomaly detection, and AI financial insights.
               </p>
             </div>
 
@@ -127,14 +128,14 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-extrabold text-white">
-                  {formatCurrency(kpis.mrr || 121.24)}
+                  {formatCurrency(kpis.mrr ?? 121.24)}
                 </span>
                 <span className="text-xs font-semibold text-emerald-400 flex items-center">
                   <ArrowUpRight className="h-3 w-3" /> +14.2%
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 mt-2">
-                Annual Run Rate: <span className="text-slate-300 font-medium">{formatCurrency(kpis.arr || 1454.88)}</span>
+                Annual Run Rate: <span className="text-slate-300 font-medium">{formatCurrency(kpis.arr ?? 1454.88)}</span>
               </p>
               <div className="absolute -bottom-6 -right-6 h-24 w-24 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
             </div>
@@ -171,7 +172,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-extrabold text-white">
-                  {formatCurrency(kpis.totalRevenue || 93.6)}
+                  {formatCurrency(kpis.totalRevenue ?? 93.6)}
                 </span>
                 <span className="text-xs font-semibold text-emerald-400 flex items-center">
                   <ArrowUpRight className="h-3 w-3" /> +100%
@@ -193,7 +194,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-extrabold text-white">
-                  {formatCurrency(kpis.outstandingPayments || 43.24)}
+                  {formatCurrency(kpis.outstandingPayments ?? 43.24)}
                 </span>
                 <span className="text-xs font-semibold text-slate-400">
                   {kpis.overdueInvoices || 0} overdue
@@ -205,6 +206,9 @@ export default function DashboardPage() {
               <div className="absolute -bottom-6 -right-6 h-24 w-24 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
             </div>
           </div>
+
+          {/* Interactive AI Insights Copilot & Anomaly Detection Strip */}
+          <AiInsightsCopilot mode="panel" compact />
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

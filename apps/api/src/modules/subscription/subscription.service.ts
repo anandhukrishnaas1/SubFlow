@@ -1,13 +1,18 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { FirebaseService } from '../../firebase/firebase.service';
+import { InvoiceService } from '../invoice/invoice.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EVENTS } from '@subflow/events';
-import { SubscriptionStatus, BillingInterval } from '@subflow/shared';
+import { SubscriptionStatus, BillingInterval, InvoiceStatus, QuotationStatus } from '@subflow/shared';
 
 @Injectable()
 export class SubscriptionService {
+  private readonly logger = new Logger(SubscriptionService.name);
+
   constructor(
     private readonly firebase: FirebaseService,
+    private readonly invoiceService: InvoiceService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -58,8 +63,9 @@ export class SubscriptionService {
     return Promise.all(
       snap.docs.map(async (doc) => {
         const itemsSnap = await doc.ref.collection('items').get();
+        const data = doc.data() as any;
         const items = itemsSnap.docs.map((i) => ({ id: i.id, ...i.data() }));
-        return { id: doc.id, ...doc.data(), items };
+        return { id: doc.id, ...data, items: items.length > 0 ? items : data.items || [] };
       }),
     );
   }
@@ -75,10 +81,11 @@ export class SubscriptionService {
       doc.ref.collection('activities').orderBy('createdAt', 'desc').get(),
     ]);
 
+    const data = doc.data() as any;
     const items = itemsSnap.docs.map((i) => ({ id: i.id, ...i.data() }));
     const activities = activitiesSnap.docs.map((a) => ({ id: a.id, ...a.data() }));
 
-    return { id: doc.id, ...doc.data(), items, activities };
+    return { id: doc.id, ...data, items: items.length > 0 ? items : data.items || [], activities };
   }
 
   async create(dto: any, performedBy: string, performedByName: string = 'User'): Promise<any> {
@@ -132,6 +139,12 @@ export class SubscriptionService {
       };
     });
 
+    if (computedItems.length === 0 && (dto.subtotal || dto.total)) {
+      subtotal = Number(dto.subtotal ?? dto.total) || 0;
+      totalTax = Number(dto.taxAmount) || 0;
+      totalDiscount = Number(dto.discountAmount) || 0;
+    }
+
     const total = Math.max(0, subtotal + totalTax - totalDiscount);
     const startDate = dto.startDate || now.toISOString();
     const nextBillingDate = this.calculateNextBillingDate(new Date(startDate), billingInterval);
@@ -146,6 +159,8 @@ export class SubscriptionService {
       billingInterval,
       quotationId: dto.quotationId || null,
       status: dto.status || SubscriptionStatus.DRAFT,
+      autoRenew: dto.autoRenew !== undefined ? Boolean(dto.autoRenew) : true,
+      renewalCount: 0,
       startDate,
       expiryDate: dto.expiryDate || null,
       nextBillingDate,
@@ -154,6 +169,10 @@ export class SubscriptionService {
       taxAmount: totalTax,
       discountAmount: totalDiscount,
       total,
+      recurringSubtotal: subtotal,
+      recurringTax: totalTax,
+      recurringDiscount: totalDiscount,
+      recurringTotal: total,
       createdBy: performedBy,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
@@ -191,24 +210,66 @@ export class SubscriptionService {
     return { id: docRef.id, ...subscriptionData, items: savedItems };
   }
 
-  async convertFromQuotation(quotationId: string, planId: string, performedBy: string, performedByName: string): Promise<any> {
+  async convertFromQuotation(
+    quotationId: string,
+    planId: string = 'plan_pro_monthly',
+    performedBy: string = 'system',
+    performedByName: string = 'User',
+  ): Promise<any> {
     const quoDoc = await this.firebase.getFirestore().collection('quotations').doc(quotationId).get();
     if (!quoDoc.exists) {
       throw new NotFoundException(`Quotation with ID ${quotationId} not found`);
     }
     const quoData = quoDoc.data() as any;
 
+    // Idempotency guard: if already converted to a subscription, return existing subscription & invoice
+    if (quoData.convertedToSubscriptionId) {
+      try {
+        const existingSub = await this.findOne(quoData.convertedToSubscriptionId);
+        let existingInvoice = null;
+        if (quoData.convertedInvoiceId) {
+          existingInvoice = await this.invoiceService.findOne(quoData.convertedInvoiceId).catch(() => null);
+        }
+        return { ...existingSub, invoice: existingInvoice, _alreadyConverted: true };
+      } catch {
+        // Proceed if referenced subscription no longer exists
+      }
+    }
+
     const itemsSnap = await quoDoc.ref.collection('items').get();
-    const items = itemsSnap.docs.map((i) => i.data());
+    const subcollectionItems = itemsSnap.docs.map((i) => i.data());
+    const rawItems = subcollectionItems.length > 0 ? subcollectionItems : quoData.items || [];
+
+    const items =
+      rawItems.length > 0
+        ? rawItems
+        : [
+            {
+              productId: null,
+              productName: `Quotation ${quoData.number || quotationId}`,
+              quantity: 1,
+              unitPrice: Number(quoData.subtotal ?? quoData.total) || 0,
+              taxAmount: Number(quoData.taxAmount) || 0,
+              discountAmount: Number(quoData.discountAmount) || 0,
+              total: Number(quoData.total) || 0,
+            },
+          ];
 
     const sub = await this.create(
       {
         customerId: quoData.customerId,
         customerName: quoData.customerName,
         customerEmail: quoData.customerEmail,
-        planId,
+        planId: planId || quoData.planId || 'plan_pro_monthly',
+        planName: quoData.planName || 'Converted from Quotation',
+        billingInterval: quoData.billingInterval || 'monthly',
         quotationId,
-        status: SubscriptionStatus.CONFIRMED,
+        status: SubscriptionStatus.ACTIVE,
+        autoRenew: true,
+        subtotal: quoData.subtotal,
+        taxAmount: quoData.taxAmount,
+        discountAmount: quoData.discountAmount,
+        total: quoData.total,
         items,
         notes: quoData.notes,
       },
@@ -216,14 +277,207 @@ export class SubscriptionService {
       performedByName,
     );
 
-    // Update quotation status
-    await quoDoc.ref.update({
-      status: 'converted',
-      convertedToSubscriptionId: sub.id,
-      updatedAt: new Date().toISOString(),
+    const now = new Date();
+    // Auto-create confirmed invoice for the first billing cycle
+    const invoice = await this.invoiceService.create({
+      subscriptionId: sub.id,
+      subscriptionNumber: sub.number,
+      customerId: sub.customerId,
+      customerName: sub.customerName,
+      customerEmail: sub.customerEmail,
+      status: InvoiceStatus.CONFIRMED,
+      issueDate: now.toISOString(),
+      dueDate: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+      billingPeriodStart: sub.startDate,
+      billingPeriodEnd: sub.nextBillingDate,
+      subtotal: sub.subtotal,
+      taxAmount: sub.taxAmount,
+      discountAmount: sub.discountAmount,
+      total: sub.total,
+      items: sub.items && sub.items.length > 0 ? sub.items : items,
+      idempotencyKey: `quote-convert-${quotationId}`,
     });
 
-    return sub;
+    // Update quotation status to ACCEPTED and link subscription + invoice
+    await quoDoc.ref.update({
+      status: QuotationStatus.ACCEPTED,
+      acceptedAt: quoData.acceptedAt || now.toISOString(),
+      convertedToSubscriptionId: sub.id,
+      convertedToSubscriptionNumber: sub.number,
+      convertedInvoiceId: invoice.id,
+      convertedInvoiceNumber: invoice.number,
+      updatedAt: now.toISOString(),
+    });
+
+    this.eventEmitter.emit(EVENTS.SUBSCRIPTION_ACTIVATED, {
+      subscriptionId: sub.id,
+      customerId: sub.customerId,
+      customerName: sub.customerName,
+      planId: sub.planId,
+      planName: sub.planName,
+      billingInterval: sub.billingInterval,
+      nextBillingDate: sub.nextBillingDate,
+      total: sub.total,
+    });
+
+    return { ...sub, invoice };
+  }
+
+  async renew(
+    id: string,
+    performedBy: string = 'system',
+    performedByName: string = 'User',
+  ): Promise<any> {
+    const ref = this.collection.doc(id);
+    const doc = await ref.get();
+    if (!doc.exists) {
+      throw new NotFoundException(`Subscription with ID ${id} not found`);
+    }
+
+    const currentData = doc.data() as any;
+    if (currentData.status === SubscriptionStatus.CANCELLED) {
+      throw new BadRequestException(`Cannot renew a cancelled subscription (${id})`);
+    }
+
+    const itemsSnap = await ref.collection('items').get();
+    const subItems = itemsSnap.docs.map((i) => ({ id: i.id, ...i.data() }));
+    const items = subItems.length > 0 ? subItems : currentData.items || [];
+
+    const now = new Date();
+    const billingInterval = currentData.billingInterval || 'monthly';
+    const currentBillingDate = currentData.nextBillingDate ? new Date(currentData.nextBillingDate) : now;
+    const periodStart = currentBillingDate.toISOString();
+    const baseDateForNext = currentBillingDate > now ? currentBillingDate : now;
+    const nextBillingDate = this.calculateNextBillingDate(baseDateForNext, billingInterval);
+    const renewalCount = (Number(currentData.renewalCount) || 0) + 1;
+
+    const subSubtotal = Number(currentData.subtotal ?? currentData.recurringSubtotal ?? currentData.total ?? currentData.recurringTotal) || 0;
+    const subTax = Number(currentData.taxAmount ?? currentData.recurringTax) || 0;
+    const subDiscount = Number(currentData.discountAmount ?? currentData.recurringDiscount) || 0;
+    const subTotal = Number(currentData.total ?? currentData.recurringTotal) || Math.max(0, subSubtotal + subTax - subDiscount);
+
+    const invoiceItems =
+      items.length > 0
+        ? items
+        : [
+            {
+              productId: currentData.planId || null,
+              productName: currentData.planName || 'Subscription Renewal',
+              description: `Renewal (${billingInterval}) for period ${periodStart.slice(0, 10)} to ${nextBillingDate.slice(0, 10)}`,
+              quantity: 1,
+              unitPrice: subSubtotal || subTotal,
+              taxAmount: subTax,
+              discountAmount: subDiscount,
+              total: subTotal,
+            },
+          ];
+
+    const invoice = await this.invoiceService.create({
+      subscriptionId: id,
+      subscriptionNumber: currentData.number,
+      customerId: currentData.customerId,
+      customerName: currentData.customerName,
+      customerEmail: currentData.customerEmail,
+      status: InvoiceStatus.CONFIRMED,
+      issueDate: now.toISOString(),
+      dueDate: new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+      billingPeriodStart: periodStart,
+      billingPeriodEnd: nextBillingDate,
+      subtotal: subSubtotal,
+      taxAmount: subTax,
+      discountAmount: subDiscount,
+      total: subTotal,
+      items: invoiceItems,
+      idempotencyKey: `renew-${id}-${periodStart.slice(0, 10)}-${renewalCount}`,
+    });
+
+    const update: any = {
+      status: SubscriptionStatus.ACTIVE,
+      nextBillingDate,
+      lastRenewedAt: now.toISOString(),
+      renewalCount,
+      updatedAt: now.toISOString(),
+    };
+
+    if (currentData.expiryDate) {
+      const expBase = new Date(currentData.expiryDate) > now ? new Date(currentData.expiryDate) : now;
+      update.expiryDate = this.calculateNextBillingDate(expBase, billingInterval);
+    }
+
+    const batch = this.firebase.getFirestore().batch();
+    batch.update(ref, update);
+
+    const actRef = ref.collection('activities').doc();
+    batch.set(actRef, {
+      action: 'RENEWED',
+      description: `Subscription renewed (#${renewalCount}) until ${nextBillingDate.slice(0, 10)}. Confirmed invoice ${invoice.number} generated.`,
+      performedBy,
+      performedByName,
+      createdAt: now.toISOString(),
+    });
+
+    await batch.commit();
+
+    this.eventEmitter.emit(EVENTS.SUBSCRIPTION_RENEWED, {
+      subscriptionId: id,
+      customerId: currentData.customerId,
+      customerName: currentData.customerName,
+      planId: currentData.planId,
+      planName: currentData.planName,
+      billingInterval,
+      nextBillingDate,
+      total: subTotal,
+    });
+
+    return {
+      id,
+      ...currentData,
+      ...update,
+      items: invoiceItems,
+      invoice,
+    };
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
+  async processAutoRenewals(): Promise<{
+    renewed: number;
+    invoicesCreated: number;
+    errors: string[];
+  }> {
+    const nowIso = new Date().toISOString();
+    this.logger.log(`Running scheduled subscription auto-renewal check at ${nowIso}`);
+
+    const snap = await this.collection
+      .where('status', '==', SubscriptionStatus.ACTIVE)
+      .where('nextBillingDate', '<=', nowIso)
+      .get();
+
+    let renewed = 0;
+    let invoicesCreated = 0;
+    const errors: string[] = [];
+
+    for (const doc of snap.docs) {
+      const data = doc.data() as any;
+      if (data.autoRenew === false) {
+        continue;
+      }
+      try {
+        const result = await this.renew(
+          doc.id,
+          'system-auto-renew',
+          'SubFlow Auto-Renewal Scheduler',
+        );
+        renewed++;
+        if (result.invoice && !result.invoice._idempotent) {
+          invoicesCreated++;
+        }
+      } catch (err) {
+        this.logger.error(`Auto-renewal failed for subscription ${doc.id}: ${err.message}`);
+        errors.push(`Subscription ${doc.id}: ${err.message}`);
+      }
+    }
+
+    return { renewed, invoicesCreated, errors };
   }
 
   async setStatus(
