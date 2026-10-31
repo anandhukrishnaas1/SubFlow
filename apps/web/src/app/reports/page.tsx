@@ -87,20 +87,23 @@ export default function ReportsPage() {
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={comparisonData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis dataKey="month" stroke="#64748b" fontSize={11} />
-                  <YAxis stroke="#64748b" fontSize={11} tickFormatter={(v) => `$${v}`} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e2da" vertical={false} />
+                  <XAxis dataKey="month" stroke="#78716c" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#78716c" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#0f172a',
-                      borderColor: '#334155',
-                      borderRadius: '0.75rem',
+                      backgroundColor: '#ffffff',
+                      borderColor: '#e5e2da',
+                      borderRadius: '1rem',
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.08)',
                       fontSize: '12px',
+                      color: '#1c1917',
+                      fontWeight: 600,
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                  <Bar dataKey="billed" fill="#ea580c" name="Invoiced Amount" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="collected" fill="#10b981" name="Settled Payments" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="billed" fill="#ea580c" name="Invoiced Amount" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="collected" fill="#10b981" name="Settled Payments" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
