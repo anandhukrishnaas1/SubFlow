@@ -39,7 +39,7 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
@@ -47,42 +47,42 @@ export default function ReportsPage() {
         <main className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
           {/* Header */}
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-              <BarChart3 className="h-6 w-6 text-blue-500" />
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2.5">
+              <BarChart3 className="h-6 w-6 text-blue-600" />
               Financial Reports & Billing Analytics
             </h1>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-slate-500 mt-1">
               Deep-dive metrics across recurring cash velocity, invoice collections, and customer retention.
             </p>
           </div>
 
           {/* Metric Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-5 rounded-2xl border border-slate-800/80 bg-slate-900/40 backdrop-blur-xl">
-              <span className="text-xs text-slate-400 uppercase font-medium">Net Collection Rate</span>
-              <p className="text-2xl font-extrabold text-emerald-400 mt-1">98.4%</p>
-              <p className="text-[11px] text-slate-500 mt-1">Payments collected vs invoices billed</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            <div className="ui-card p-5">
+              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Net Collection Rate</span>
+              <p className="text-3xl font-extrabold text-emerald-600 mt-1 font-mono">98.4%</p>
+              <p className="text-[11px] text-slate-500 mt-1 font-medium">Payments collected vs invoices billed</p>
             </div>
 
-            <div className="p-5 rounded-2xl border border-slate-800/80 bg-slate-900/40 backdrop-blur-xl">
-              <span className="text-xs text-slate-400 uppercase font-medium">Average Revenue Per User (ARPU)</span>
-              <p className="text-2xl font-extrabold text-white mt-1">
+            <div className="ui-card p-5">
+              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Average Revenue Per User (ARPU)</span>
+              <p className="text-3xl font-extrabold text-slate-900 mt-1 font-mono">
                 {formatCurrency(kpis.mrr ? kpis.mrr / (kpis.totalCustomers || 1) : 40.41)}
               </p>
-              <p className="text-[11px] text-slate-500 mt-1">Per active account each month</p>
+              <p className="text-[11px] text-slate-500 mt-1 font-medium">Per active account each month</p>
             </div>
 
-            <div className="p-5 rounded-2xl border border-slate-800/80 bg-slate-900/40 backdrop-blur-xl">
-              <span className="text-xs text-slate-400 uppercase font-medium">Customer Churn Rate</span>
-              <p className="text-2xl font-extrabold text-blue-400 mt-1">0.0%</p>
-              <p className="text-[11px] text-slate-500 mt-1">Zero churn across active subscriptions</p>
+            <div className="ui-card p-5">
+              <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Customer Churn Rate</span>
+              <p className="text-3xl font-extrabold text-blue-600 mt-1 font-mono">0.0%</p>
+              <p className="text-[11px] text-slate-500 mt-1 font-medium">Zero churn across active subscriptions</p>
             </div>
           </div>
 
           {/* Billed vs Collected Bar Chart */}
-          <div className="rounded-2xl border border-slate-800/80 bg-slate-900/40 p-6 backdrop-blur-xl">
-            <h3 className="text-base font-semibold text-white mb-1">Billing vs Realized Collection</h3>
-            <p className="text-xs text-slate-400 mb-6">Comparison of total invoice receivables against settled payments</p>
+          <div className="ui-card p-6">
+            <h3 className="text-base font-bold text-slate-900 mb-1">Billing vs Realized Collection</h3>
+            <p className="text-xs text-slate-500 mb-6 font-medium">Comparison of total invoice receivables against settled payments</p>
 
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">

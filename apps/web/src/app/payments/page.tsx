@@ -53,7 +53,7 @@ export default function PaymentsPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
@@ -62,18 +62,18 @@ export default function PaymentsPage() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-                <CreditCard className="h-6 w-6 text-emerald-400" />
+              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2.5">
+                <CreditCard className="h-6 w-6 text-emerald-600" />
                 Payments & Collections
               </h1>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="text-sm text-slate-500 mt-1 font-medium">
                 Real-time transaction reconciliation, partial payment receipts, and payment method breakdowns.
               </p>
             </div>
 
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-emerald-600/25 transition-all self-start sm:self-auto"
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-emerald-600/20 transition-all self-start sm:self-auto"
             >
               <Plus className="h-4 w-4" />
               Record Payment
@@ -81,11 +81,11 @@ export default function PaymentsPage() {
           </div>
 
           {/* Payments Table */}
-          <div className="rounded-2xl border border-slate-800/80 bg-slate-900/40 backdrop-blur-xl overflow-hidden shadow-xl">
+          <div className="ui-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-slate-800/80 bg-slate-900/80 text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
+                  <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
                     <th className="py-3.5 px-4">Transaction Ref</th>
                     <th className="py-3.5 px-4">Invoice #</th>
                     <th className="py-3.5 px-4">Customer</th>
@@ -95,38 +95,38 @@ export default function PaymentsPage() {
                     <th className="py-3.5 px-4">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
+                <tbody className="divide-y divide-slate-100">
                   {payments.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-slate-500">
+                      <td colSpan={7} className="py-8 text-center text-slate-400 font-medium">
                         No payment records yet.
                       </td>
                     </tr>
                   ) : (
                     payments.map((pay: any) => (
-                      <tr key={pay.id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="py-3.5 px-4 font-mono font-medium text-slate-300">
+                      <tr key={pay.id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-700">
                           {pay.transactionRef || pay.id}
                         </td>
-                        <td className="py-3.5 px-4 font-mono text-blue-400">
+                        <td className="py-3.5 px-4 font-mono font-bold text-blue-600">
                           {pay.invoiceNumber || 'INV-001'}
                         </td>
-                        <td className="py-3.5 px-4 font-medium text-white">
+                        <td className="py-3.5 px-4 font-bold text-slate-900">
                           {pay.customerName || 'Customer'}
                         </td>
                         <td className="py-3.5 px-4">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-slate-800 text-slate-300 border border-slate-700">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-100 text-slate-700 border border-slate-200">
                             {pay.method}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-slate-400">
+                        <td className="py-3.5 px-4 text-slate-500 font-medium">
                           {formatDate(pay.paymentDate || pay.createdAt)}
                         </td>
-                        <td className="py-3.5 px-4 font-bold text-emerald-400 text-sm">
+                        <td className="py-3.5 px-4 font-extrabold text-emerald-600 text-sm font-mono">
                           +{formatCurrency(pay.amount)}
                         </td>
                         <td className="py-3.5 px-4">
-                          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
+                          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
                             <CheckCircle className="h-3 w-3" /> Reconciled
                           </span>
                         </td>
@@ -140,18 +140,18 @@ export default function PaymentsPage() {
 
           {/* Record Payment Modal */}
           {showModal && (
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                  <h3 className="text-base font-bold text-white">Record Invoice Payment</h3>
-                  <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white">
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <h3 className="text-base font-bold text-slate-900">Record Invoice Payment</h3>
+                  <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
                     ✕
                   </button>
                 </div>
 
                 <form onSubmit={handleRecord} className="space-y-4 text-xs">
                   <div>
-                    <label className="block text-slate-300 font-medium mb-1">Select Invoice</label>
+                    <label className="block text-slate-700 font-medium mb-1">Select Invoice</label>
                     <select
                       value={paymentForm.invoiceId}
                       onChange={(e) => {
@@ -162,7 +162,7 @@ export default function PaymentsPage() {
                           amount: inv ? (inv.outstandingAmount || inv.total).toString() : '',
                         });
                       }}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-blue-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-all font-medium"
                       required
                     >
                       <option value="">Select Invoice to Reconcile...</option>
@@ -175,25 +175,25 @@ export default function PaymentsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-300 font-medium mb-1">Amount ($)</label>
+                    <label className="block text-slate-700 font-medium mb-1">Amount ($)</label>
                     <input
                       type="number"
                       step="0.01"
                       value={paymentForm.amount}
                       onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
                       placeholder="0.00"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-blue-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-all font-medium"
                       required
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-slate-300 font-medium mb-1">Payment Method</label>
+                      <label className="block text-slate-700 font-medium mb-1">Payment Method</label>
                       <select
                         value={paymentForm.method}
                         onChange={(e) => setPaymentForm({ ...paymentForm, method: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-blue-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-all font-medium"
                       >
                         <option value="card">Credit Card</option>
                         <option value="bank_transfer">Bank Transfer / ACH</option>
@@ -204,28 +204,28 @@ export default function PaymentsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 font-medium mb-1">Reference ID</label>
+                      <label className="block text-slate-700 font-medium mb-1">Reference ID</label>
                       <input
                         type="text"
                         value={paymentForm.transactionRef}
                         onChange={(e) => setPaymentForm({ ...paymentForm, transactionRef: e.target.value })}
                         placeholder="e.g. ch_3M..."
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 focus:outline-none focus:border-blue-500"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-all font-medium"
                       />
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-800">
+                  <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
                     <button
                       type="button"
                       onClick={() => setShowModal(false)}
-                      className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium"
+                      className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md shadow-emerald-600/30"
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm shadow-emerald-600/20 transition-all"
                     >
                       Confirm Payment
                     </button>

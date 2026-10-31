@@ -68,18 +68,18 @@ export default function InvoicesPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'confirmed':
-        return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'overdue':
-        return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+        return 'bg-rose-50 text-rose-700 border-rose-200';
       default:
-        return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+        return 'bg-slate-50 text-slate-700 border-slate-200';
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
@@ -88,27 +88,27 @@ export default function InvoicesPage() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-                <FileText className="h-6 w-6 text-blue-400" />
+              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2.5">
+                <FileText className="h-6 w-6 text-blue-600" />
                 Invoices & Billing Accounts
               </h1>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="text-sm text-slate-500 mt-1">
                 Track generated invoices, tax amounts, balances, and downloadable PDF receipts.
               </p>
             </div>
           </div>
 
           {/* Filter Bar */}
-          <div className="flex items-center gap-2 bg-slate-900/60 p-2 rounded-xl border border-slate-800/80 w-fit">
+          <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-2xs w-fit">
             <Filter className="h-3.5 w-3.5 text-slate-400 ml-2 mr-1" />
             {['all', 'confirmed', 'paid', 'draft', 'overdue'].map((st) => (
               <button
                 key={st}
                 onClick={() => setFilterStatus(st)}
-                className={`text-xs px-3 py-1 rounded-lg capitalize font-medium transition-all ${
+                className={`text-xs px-3 py-1 rounded-lg capitalize font-bold transition-all ${
                   filterStatus === st
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
                 {st}
@@ -117,11 +117,11 @@ export default function InvoicesPage() {
           </div>
 
           {/* Invoices Table */}
-          <div className="rounded-2xl border border-slate-800/80 bg-slate-900/40 backdrop-blur-xl overflow-hidden shadow-xl">
+          <div className="ui-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-slate-800/80 bg-slate-900/80 text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
+                  <tr className="border-b border-slate-100 bg-slate-50/80 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
                     <th className="py-3.5 px-4">Invoice #</th>
                     <th className="py-3.5 px-4">Customer</th>
                     <th className="py-3.5 px-4">Issue Date</th>
@@ -132,36 +132,36 @@ export default function InvoicesPage() {
                     <th className="py-3.5 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
+                <tbody className="divide-y divide-slate-100">
                   {invoices.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="py-8 text-center text-slate-500">
+                      <td colSpan={8} className="py-8 text-center text-slate-400">
                         No invoices found.
                       </td>
                     </tr>
                   ) : (
                     invoices.map((inv: any) => (
-                      <tr key={inv.id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="py-3.5 px-4 font-mono font-medium text-slate-200">
+                      <tr key={inv.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
                           {inv.number}
                         </td>
                         <td className="py-3.5 px-4">
-                          <p className="font-semibold text-white">{inv.customerName}</p>
-                          <p className="text-[11px] text-slate-400">{inv.customerEmail}</p>
+                          <p className="font-bold text-slate-900">{inv.customerName}</p>
+                          <p className="text-[11px] text-slate-500">{inv.customerEmail}</p>
                         </td>
-                        <td className="py-3.5 px-4 text-slate-300">
+                        <td className="py-3.5 px-4 text-slate-600">
                           {formatDate(inv.issueDate)}
                         </td>
-                        <td className="py-3.5 px-4 text-slate-300">
+                        <td className="py-3.5 px-4 text-slate-600">
                           {formatDate(inv.dueDate)}
                         </td>
-                        <td className="py-3.5 px-4 font-bold text-white">
+                        <td className="py-3.5 px-4 font-extrabold text-slate-900 font-mono">
                           {formatCurrency(inv.total)}
                         </td>
                         <td className="py-3.5 px-4">
                           <span
-                            className={`font-semibold ${
-                              Number(inv.outstandingAmount) > 0 ? 'text-amber-400' : 'text-slate-400'
+                            className={`font-bold font-mono ${
+                              Number(inv.outstandingAmount) > 0 ? 'text-amber-600' : 'text-slate-400'
                             }`}
                           >
                             {formatCurrency(inv.outstandingAmount || 0)}

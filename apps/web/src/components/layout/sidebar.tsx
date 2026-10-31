@@ -18,7 +18,6 @@ import {
   Zap,
   Sparkles,
   ShieldCheck,
-  UserCheck,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
@@ -48,7 +47,7 @@ export function Sidebar() {
     setRunningBilling(true);
     try {
       const res = await api.triggerBillingRun();
-      setBillingResult(`Invoices created: ${res.invoicesCreated || 0}`);
+      setBillingResult(`Created: ${res.invoicesCreated || 0} invoices`);
       setTimeout(() => setBillingResult(null), 4000);
     } catch {
       setBillingResult('Billing run queued');
@@ -59,26 +58,26 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-64 border-r border-slate-800/80 bg-slate-900/60 backdrop-blur-xl flex flex-col justify-between h-screen sticky top-0">
+    <aside className="w-64 border-r border-slate-200/80 bg-white flex flex-col justify-between h-screen sticky top-0 shrink-0">
       <div>
         {/* Brand Header */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800/60">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-100">
           <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform">
-              <Sparkles className="h-4.5 w-4.5 text-white" />
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+              <Sparkles className="h-5 w-5 text-white" />
             </div>
             <div>
-              <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+              <span className="font-extrabold text-lg tracking-tight text-slate-900">
                 SubFlow
               </span>
-              <span className="block text-[10px] text-blue-400 font-medium -mt-1 tracking-wider uppercase">
+              <span className="block text-[10px] text-blue-600 font-bold -mt-1 tracking-wider uppercase">
                 Event-Driven
               </span>
             </div>
           </Link>
 
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             Live
           </span>
         </div>
@@ -93,21 +92,21 @@ export function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all group relative',
+                  'flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all group relative',
                   isActive
-                    ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/50',
+                    ? 'bg-blue-50 text-blue-600 font-bold shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50',
                 )}
               >
                 <Icon
                   className={cn(
                     'h-4 w-4 transition-colors',
-                    isActive ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200',
+                    isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600',
                   )}
                 />
                 <span>{item.label}</span>
                 {isActive && (
-                  <span className="absolute right-2 h-1.5 w-1.5 rounded-full bg-blue-400 shadow-sm shadow-blue-400/50" />
+                  <span className="absolute right-2.5 h-1.5 w-1.5 rounded-full bg-blue-600 shadow-sm" />
                 )}
               </Link>
             );
@@ -116,44 +115,44 @@ export function Sidebar() {
       </div>
 
       {/* Bottom Actions & Role Switcher */}
-      <div className="p-4 border-t border-slate-800/80 space-y-3 bg-slate-950/40">
+      <div className="p-4 border-t border-slate-100 space-y-3 bg-slate-50/50">
         {/* Automated Billing Trigger */}
         <button
           onClick={handleRunBilling}
           disabled={runningBilling}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-lg shadow-md shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-50"
         >
           <Zap className={cn('h-3.5 w-3.5', runningBilling && 'animate-spin')} />
           {runningBilling ? 'Processing Run...' : 'Run Billing Engine'}
         </button>
 
         {billingResult && (
-          <div className="text-[11px] text-emerald-400 text-center font-medium bg-emerald-500/10 py-1 rounded border border-emerald-500/20">
+          <div className="text-[11px] text-emerald-700 text-center font-bold bg-emerald-50 py-1 rounded-lg border border-emerald-200">
             {billingResult}
           </div>
         )}
 
         {/* Role Switcher Pill */}
-        <div className="pt-2 border-t border-slate-800/60">
-          <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1.5 font-medium">
+        <div className="pt-2 border-t border-slate-200/60">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1.5 font-medium">
             <span className="flex items-center gap-1">
               <ShieldCheck className="h-3 w-3 text-slate-400" /> Active Role:
             </span>
-            <span className="text-blue-400 uppercase font-semibold text-[10px]">
+            <span className="text-blue-600 uppercase font-bold text-[10px]">
               {user?.role || 'admin'}
             </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
+          <div className="grid grid-cols-3 gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs">
             {(['admin', 'staff', 'customer'] as const).map((r) => (
               <button
                 key={r}
                 onClick={() => switchRole(r)}
                 className={cn(
-                  'text-[10px] font-medium capitalize py-1 rounded transition-all',
+                  'text-[10px] font-bold capitalize py-1 rounded-lg transition-all',
                   user?.role === r
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800',
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100',
                 )}
               >
                 {r}
@@ -162,14 +161,14 @@ export function Sidebar() {
           </div>
         </div>
 
-        {/* User Card */}
+        {/* User Profile Footer */}
         <div className="flex items-center gap-2.5 pt-1">
-          <div className="h-8 w-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-slate-300">
+          <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-700">
             {user?.displayName ? user.displayName.slice(0, 2).toUpperCase() : 'SF'}
           </div>
           <div className="truncate flex-1">
-            <p className="text-xs font-medium text-slate-200 truncate">{user?.displayName}</p>
-            <p className="text-[11px] text-slate-500 truncate">{user?.email}</p>
+            <p className="text-xs font-bold text-slate-900 truncate">{user?.displayName || 'Alex Rivers'}</p>
+            <p className="text-[11px] text-slate-500 truncate">{user?.email || 'admin@subflow.io'}</p>
           </div>
         </div>
       </div>
