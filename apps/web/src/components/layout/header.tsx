@@ -136,6 +136,8 @@ export function Header({ onOpenAiAssistant, title }: HeaderProps) {
               <img
                 src="/subflow-logo.png"
                 alt="SubFlow"
+                height={28}
+                style={{ height: '28px', width: 'auto', maxHeight: '28px' }}
                 className="h-7 w-auto object-contain transition-transform group-hover:scale-105"
               />
             </Link>

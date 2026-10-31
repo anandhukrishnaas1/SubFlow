@@ -65,6 +65,8 @@ export function Sidebar() {
             <img
               src="/subflow-logo.png"
               alt="SubFlow"
+              height={32}
+              style={{ height: '32px', width: 'auto', maxHeight: '32px' }}
               className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
             />
           </Link>
