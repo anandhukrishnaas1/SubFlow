@@ -188,18 +188,13 @@ export function Sidebar() {
 
   return (
     <>
-      {/* 1. Permanent Desktop Sidebar (Hidden on screens < 1024px) */}
-      <aside className="hidden lg:flex w-64 border-r border-slate-200/80 bg-white flex-col justify-between h-screen sticky top-0 shrink-0 z-20">
-        {renderNavContent(false)}
-      </aside>
-
-      {/* 2. Mobile Drawer & Backdrop (Active on screens < 1024px when toggled) */}
+      {/* Universal Slide-out Navigation Drawer & Backdrop (Active when toggled from Header or Bottom Bar) */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50">
           {/* Backdrop */}
           <div
             onClick={closeMobile}
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
           />
 
           {/* Off-canvas Sheet */}
