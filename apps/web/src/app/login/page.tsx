@@ -83,6 +83,15 @@ export default function LoginPage() {
         return 'Sign-in window was closed before finishing authentication.';
       case 'auth/cancelled-popup-request':
         return 'Another sign-in window is already active.';
+      case 'auth/unauthorized-domain': {
+        const host = typeof window !== 'undefined' ? window.location.hostname : 'current domain';
+        if (host === '127.0.0.1') {
+          return 'Domain "127.0.0.1" is not authorized by Firebase. Please open http://localhost:3000 instead, or add 127.0.0.1 in Firebase Console > Authentication > Settings > Authorized domains.';
+        }
+        return `Domain "${host}" is not authorized for Google Sign-In. Add "${host}" to Firebase Console > Authentication > Settings > Authorized domains.`;
+      }
+      case 'auth/operation-not-allowed':
+        return 'Google Sign-In is not enabled in Firebase Console. Go to Authentication > Sign-in method and enable Google.';
       default:
         return err?.message || 'Authentication error. Please check your internet connection.';
     }
