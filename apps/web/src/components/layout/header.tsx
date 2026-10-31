@@ -41,7 +41,7 @@ export function Header({ onOpenAiAssistant }: HeaderProps) {
           <img
             src="/subflow-logo.png"
             alt="SubFlow"
-            className="h-6 w-auto object-contain"
+            className="h-7 w-auto object-contain"
           />
           <div className="h-4 w-px bg-slate-200" />
           <span className="font-bold text-slate-900 text-sm tracking-tight">Platform Overview</span>
