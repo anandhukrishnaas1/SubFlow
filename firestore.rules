@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() { return request.auth != null; }
+    function isAdmin() { return isAuthenticated() && request.auth.token.role == 'admin'; }
+    function isStaff() { return isAuthenticated() && request.auth.token.role == 'staff'; }
+    function isAdminOrStaff() { return isAdmin() || isStaff(); }
+    function isOwner(customerId) { return isAuthenticated() && request.auth.uid == customerId; }
+
+    // Users — admin can read/write all, users can read/update own profile
+    match /users/{userId} {
+      allow read: if isAdminOrStaff() || request.auth.uid == userId;
+      allow write: if isAdmin() || request.auth.uid == userId;
+
+      match /notifications/{notifId} {
+        allow read, write: if isAdminOrStaff() || request.auth.uid == userId;
+      }
+    }
+
+    // Products, Plans, Taxes, Discounts
+    match /products/{doc=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdminOrStaff();
+    }
+    match /plans/{doc=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdminOrStaff();
+    }
+    match /taxes/{doc=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    match /discounts/{doc=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Quotations
+    match /quotations/{quotationId} {
+      allow read: if isAdminOrStaff() || isOwner(resource.data.customerId);
+      allow write: if isAdminOrStaff();
+
+      match /items/{itemId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdminOrStaff();
+      }
+    }
+
+    // Subscriptions
+    match /subscriptions/{subId} {
+      allow read: if isAdminOrStaff() || isOwner(resource.data.customerId);
+      allow write: if isAdminOrStaff();
+
+      match /items/{itemId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdminOrStaff();
+      }
+      match /activities/{activityId} {
+        allow read: if isAdminOrStaff() || isOwner(get(/databases/$(database)/documents/subscriptions/$(subId)).data.customerId);
+        allow write: if isAdminOrStaff();
+      }
+    }
+
+    // Invoices
+    match /invoices/{invId} {
+      allow read: if isAdminOrStaff() || isOwner(resource.data.customerId);
+      allow write: if isAdminOrStaff();
+
+      match /items/{itemId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdminOrStaff();
+      }
+    }
+
+    // Payments
+    match /payments/{payId} {
+      allow read: if isAdminOrStaff() || isOwner(resource.data.customerId);
+      allow write: if isAdminOrStaff();
+    }
+
+    // Counters (KPIs)
+    match /counters/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdminOrStaff();
+    }
+
+    // Analytics Time Series
+    match /analytics/{doc=**} {
+      allow read: if isAdminOrStaff();
+      allow write: if isAdminOrStaff();
+    }
+
+    // Global Activity Logs
+    match /activityLogs/{logId} {
+      allow read, write: if isAdminOrStaff();
+    }
+  }
+}
