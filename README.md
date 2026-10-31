@@ -4,7 +4,6 @@
 SubFlow is an enterprise-grade, event-driven subscription management and automated recurring billing SaaS platform designed for sub-second read performance (< 50ms) and real-time live data streaming using **Firebase Firestore**, **Next.js 15**, and **NestJS 10**.
 
 
----
 
 ## Key Highlights & Architecture
 
