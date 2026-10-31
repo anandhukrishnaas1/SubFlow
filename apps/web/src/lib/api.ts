@@ -277,12 +277,12 @@ function handleFallback(endpoint: string, options: RequestInit = {}): any {
   if (path === '/analytics/kpis') return demoStore.kpis;
   if (path === '/analytics/revenue-trends') {
     return [
-      { month: 'Jun', revenue: 420 },
-      { month: 'Jul', revenue: 680 },
-      { month: 'Aug', revenue: 950 },
-      { month: 'Sep', revenue: 1120 },
-      { month: 'Oct', revenue: 1450 },
-      { month: 'Nov', revenue: Number(demoStore.kpis.totalRevenue) || 93.6 },
+      { month: 'Jun', billed: 440, collected: 420, revenue: 420 },
+      { month: 'Jul', billed: 710, collected: 680, revenue: 680 },
+      { month: 'Aug', billed: 990, collected: 950, revenue: 950 },
+      { month: 'Sep', billed: 1180, collected: 1120, revenue: 1120 },
+      { month: 'Oct', billed: 1510, collected: 1450, revenue: 1450 },
+      { month: 'Nov', billed: 210, collected: Number(demoStore.kpis.totalRevenue) || 136.84, revenue: Number(demoStore.kpis.totalRevenue) || 136.84 },
     ];
   }
   if (path === '/analytics/subscription-breakdown') {
