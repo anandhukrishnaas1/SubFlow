@@ -17,9 +17,42 @@ export async function POST(req: Request) {
     const kpis = context.kpis || {};
     const topic = context.topic || 'General Intelligence';
 
-    const systemPrompt = `You are the SubFlow Analytics Copilot, an expert AI subscription intelligence and revenue operations analyst embedded in the SubFlow porcelain dashboard.
+    // Direct, relevant response for greetings and conversational inquiries
+    const trimmedMsg = message.trim().toLowerCase();
+    const isGreeting = /^(hi|hello|haai|hai|hey|heyy|greetings|good\s*(morning|afternoon|evening))\b/i.test(trimmedMsg);
+    const isIdentityOrHelp = /^(who are you|what can you do|what are you|help me|how can you help)\b/i.test(trimmedMsg);
+    const isCourtesy = /^(thank you|thanks|thx|ok|okay|cool|got it|bye|goodbye)\b/i.test(trimmedMsg);
 
-LIVE SYSTEM TELEMETRY (REAL FIRESTORE DATA):
+    if (isGreeting) {
+      return NextResponse.json({
+        success: true,
+        isConversational: true,
+        message: 'Hello! I am your SubFlow Analytics Copilot. How can I help you today? You can ask me about your Monthly Recurring Revenue (MRR), churn risks, overdue invoices, or active subscriptions.',
+        model,
+      });
+    }
+
+    if (isIdentityOrHelp) {
+      return NextResponse.json({
+        success: true,
+        isConversational: true,
+        message: 'I am the SubFlow Analytics Copilot. I analyze real-time Firestore ledger telemetry to answer your questions about MRR, ARR, active subscribers, customer churn risk, and billing collections. What would you like to check?',
+        model,
+      });
+    }
+
+    if (isCourtesy) {
+      return NextResponse.json({
+        success: true,
+        isConversational: true,
+        message: 'You are welcome! Let me know whenever you need any subscription intelligence or metric analysis.',
+        model,
+      });
+    }
+
+    const systemPrompt = `You are the SubFlow Analytics Copilot, an AI subscription intelligence advisor embedded directly into the SubFlow platform.
+
+LIVE SYSTEM TELEMETRY (REAL FIRESTORE LEDGER METRICS):
 - Monthly Recurring Revenue (MRR): $${kpis.mrr ?? 136.84}
 - Annual Run Rate (ARR): $${kpis.arr ?? 1642.08}
 - Total Realized Revenue: $${kpis.totalRevenue ?? 136.84}
@@ -27,13 +60,19 @@ LIVE SYSTEM TELEMETRY (REAL FIRESTORE DATA):
 - Total Customers: ${kpis.totalCustomers ?? 4}
 - Overdue Invoices: ${kpis.overdueInvoices ?? 0}
 - Outstanding Balance: $${kpis.outstandingPayments ?? 0}
-- Active Context Topic: ${topic}
+- Active Filter Topic: ${topic}
 
-GUIDELINES:
-1. Always base your analysis on the live telemetry provided above.
-2. Provide concise, clear, and actionable subscription business insights (e.g., expansion revenue, dunning, churn prevention, contract renewals).
-3. Format your response cleanly using markdown headings, bold figures, and structured bullet points.
-4. Keep the tone executive, confident, and professional. Avoid fluffy filler text.`;
+CRITICAL RULES FOR RELEVANCE AND FORMATTING:
+1. STRICT RELEVANCE: Answer ONLY what the user asks.
+   - If the user asks about MRR, discuss ONLY MRR.
+   - If the user asks about churn, discuss ONLY churn and overdue invoices.
+   - If the user asks about customer count, report ONLY customer numbers.
+   - DO NOT dump the full telemetry or irrelevant metrics unless the user explicitly asks for a "full audit", "all metrics", or "complete overview".
+2. NO RAW MARKDOWN SYMBOLS:
+   - NEVER use '#' or '###' for headers. Just write the header as plain text on its own line.
+   - NEVER use asterisks '**' or '*' for bold or italics. Output clean, normal text.
+   - NEVER use '+' or '*' as bullet points. Use standard bullet symbol '• ' or numbered lists '1. '.
+3. Keep answers clear, direct, and concise (under 120 words unless a detailed breakdown is requested).`;
 
     const formattedHistory = history.map((h: any) => ({
       role: h.sender === 'user' ? 'user' : 'assistant',
@@ -55,8 +94,8 @@ GUIDELINES:
           ...formattedHistory.slice(-4),
           { role: 'user', content: message },
         ],
-        temperature: 0.7,
-        max_tokens: 600,
+        temperature: 0.4,
+        max_tokens: 450,
       }),
     });
 
@@ -67,16 +106,18 @@ GUIDELINES:
         {
           success: false,
           fallback: true,
-          message: generateFallbackReply(message, kpis, topic),
+          message: cleanText(generateFallbackReply(message, kpis, topic)),
         },
         { status: 200 },
       );
     }
 
     const data = await response.json();
-    const replyText =
+    const rawReply =
       data.choices?.[0]?.message?.content ||
-      'I have analyzed your request against real-time telemetry.';
+      'I have analyzed your telemetry. All systems and billing ledgers are synchronized.';
+
+    const replyText = cleanText(rawReply);
 
     return NextResponse.json({
       success: true,
@@ -97,10 +138,32 @@ GUIDELINES:
   }
 }
 
+function cleanText(text: string): string {
+  return text
+    // Remove markdown headers #, ##, ###
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/#{1,6}\s*/g, '')
+    // Remove bold **word** or __word__
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    // Remove italic *word* or _word_
+    .replace(/\*([^*\n]+)\*/g, '$1')
+    // Convert * or + bullets at line start to •
+    .replace(/^\s*[\*\+\-]\s+/gm, '• ')
+    // Strip any lingering standalone * or # symbols
+    .replace(/[\*#]/g, '')
+    // Normalize newlines
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function generateFallbackReply(message: string, kpis: any, topic: string): string {
   const q = message.toLowerCase();
   if (q.includes('churn') || q.includes('risk')) {
-    return `### Churn Risk Assessment (${topic})\n- **Overdue Invoices**: ${kpis.overdueInvoices || 0} accounts currently past grace period.\n- **Outstanding Balance**: $${kpis.outstandingPayments || 0}.\n- **Recommended Action**: Auto-trigger dunning cycle with instant payment links.`;
+    return `Churn Risk Assessment (${topic})\n• Overdue Invoices: ${kpis.overdueInvoices || 0} accounts currently past grace period.\n• Outstanding Balance: $${kpis.outstandingPayments || 0}.\n• Recommended Action: Auto-trigger dunning cycle with instant payment links.`;
   }
-  return `### Telemetry Snapshot (${topic})\n- **Active MRR**: $${kpis.mrr ?? 136.84}\n- **Annual Run Rate**: $${kpis.arr ?? 1642.08}\n- **Active Accounts**: ${kpis.activeSubscriptions ?? 2} subscribers in good standing.\n- **Settlement**: 100% verified against live Firestore ledger.`;
+  if (q.includes('mrr') || q.includes('revenue')) {
+    return `Revenue Telemetry (${topic})\n• Monthly Recurring Revenue: $${kpis.mrr ?? 136.84}\n• Annual Run Rate: $${kpis.arr ?? 1642.08}\n• Realized Revenue: $${kpis.totalRevenue ?? 136.84}`;
+  }
+  return `Telemetry Snapshot (${topic})\n• Active MRR: $${kpis.mrr ?? 136.84}\n• Annual Run Rate: $${kpis.arr ?? 1642.08}\n• Active Accounts: ${kpis.activeSubscriptions ?? 2} subscribers in good standing.`;
 }

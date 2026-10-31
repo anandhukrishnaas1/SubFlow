@@ -79,11 +79,12 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
 
       const data = await res.json();
       const content = data.message || 'I have analyzed your request against real-time telemetry.';
+      const isConversational = data.isConversational || /^(hi|hello|haai|hai|hey|heyy|greetings|thanks|thank you|ok)\b/i.test(textToSend.trim());
 
       const aiReply: Message = {
         id: `ai_${Date.now()}`,
         sender: 'ai',
-        title: `Intelligence Report (${topic})`,
+        title: isConversational ? undefined : `Intelligence Report (${topic})`,
         text: content,
         timestamp: 'Just now',
       };
@@ -166,7 +167,7 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
                 </div>
                 <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-4 text-xs max-w-[90%] shadow-sm space-y-3">
                   {m.title && (
-                    <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                    <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
                       <span className="font-extrabold text-slate-900 text-sm tracking-tight">{m.title}</span>
                       <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
                         SubFlow Telemetry
@@ -174,12 +175,8 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
                     </div>
                   )}
 
-                  {/* Render Markdown / Plaintext from OpenRouter AI */}
-                  {m.text && (
-                    <div className="text-slate-700 text-xs leading-relaxed space-y-2 whitespace-pre-line font-medium">
-                      {m.text}
-                    </div>
-                  )}
+                  {/* Render Clean Formatted Content without raw markdown symbols */}
+                  {m.text && <CleanMessageContent text={m.text} />}
 
                   {/* Render Legacy Structured Sections */}
                   {m.sections?.map((sec, i) => (
@@ -262,3 +259,91 @@ export function AiAssistantDrawer({ isOpen, onClose, kpis }: AiAssistantDrawerPr
     </div>
   );
 }
+
+function CleanMessageContent({ text }: { text: string }) {
+  const rawLines = text.split('\n');
+  const blocks: Array<{ type: 'bullet' | 'header' | 'paragraph'; content: string }> = [];
+
+  for (const rawLine of rawLines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    // Header starting with #, ##, ###
+    if (line.startsWith('#')) {
+      const cleanHeader = line.replace(/^#{1,6}\s*/, '').trim();
+      if (cleanHeader) {
+        blocks.push({ type: 'header', content: cleanHeader });
+        continue;
+      }
+    }
+
+    // Bullet items starting with *, +, -, •
+    if (/^[\*\+\-•]\s+/.test(line)) {
+      const cleanBullet = line.replace(/^[\*\+\-•]\s+/, '').trim();
+      if (cleanBullet) {
+        blocks.push({ type: 'bullet', content: cleanBullet });
+        continue;
+      }
+    }
+
+    // Short section titles ending with colon (e.g., "Revenue Performance:" or "* **Revenue Performance**:")
+    const stripped = line.replace(/^[\*\+\-•]\s+/, '').replace(/[\*#_]/g, '').trim();
+    if (stripped.endsWith(':') && stripped.length < 50) {
+      blocks.push({ type: 'header', content: stripped });
+      continue;
+    }
+
+    // Normal paragraph
+    blocks.push({ type: 'paragraph', content: line });
+  }
+
+  const renderInline = (str: string) => {
+    // Strip any raw markdown hashes
+    const withoutHash = str.replace(/#{1,6}\s*/g, '');
+
+    // Split on **bold** text
+    const parts = withoutHash.split(/(\*\*[^*]+\*\*)/g);
+
+    return parts.map((part, idx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        const inner = part.slice(2, -2).replace(/[\*#\+]/g, '').trim();
+        return (
+          <strong key={idx} className="font-semibold text-slate-900">
+            {inner}
+          </strong>
+        );
+      }
+      // Remove any lingering stray * or # symbols
+      const cleanPart = part.replace(/[\*#]/g, '');
+      return <span key={idx}>{cleanPart}</span>;
+    });
+  };
+
+  return (
+    <div className="space-y-2 text-xs leading-relaxed text-slate-700">
+      {blocks.map((block, i) => {
+        if (block.type === 'header') {
+          return (
+            <div key={i} className="font-bold text-slate-900 text-xs pt-1 border-b border-slate-100 pb-0.5">
+              {renderInline(block.content)}
+            </div>
+          );
+        }
+        if (block.type === 'bullet') {
+          return (
+            <div key={i} className="flex items-start gap-2 pl-0.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-orange-600 mt-1.5 shrink-0" />
+              <div className="flex-1">{renderInline(block.content)}</div>
+            </div>
+          );
+        }
+        return (
+          <p key={i} className="text-slate-700 font-medium">
+            {renderInline(block.content)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
