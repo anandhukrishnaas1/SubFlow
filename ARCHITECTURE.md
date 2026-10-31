@@ -19,34 +19,34 @@ flowchart TB
     classDef asyncTier fill:#78350f,stroke:#f59e0b,stroke-width:2px,color:#ffffff;
 
     subgraph CLIENT["1. Client & Presentation Layer (Next.js 15 App Router)"]
-        ADMIN_UI["🖥️ Admin & Staff Operations Portal<br/>(KPIs, Subscriptions, Invoices, Ingestion)"]:::clientTier
-        PORTAL_UI["👤 Customer Self-Service Portal<br/>(My Subscriptions, Invoices, PDF Receipts)"]:::clientTier
-        QUERY_CACHE["⚡ TanStack Query & React State<br/>(Zero-Lag Stale-While-Revalidate)"]:::clientTier
+        ADMIN_UI["Admin & Staff Operations Portal<br/>(KPIs, Subscriptions, Invoices, Ingestion)"]:::clientTier
+        PORTAL_UI["Customer Self-Service Portal<br/>(My Subscriptions, Invoices, PDF Receipts)"]:::clientTier
+        QUERY_CACHE["TanStack Query & React State<br/>(Zero-Lag Stale-While-Revalidate)"]:::clientTier
     end
 
     subgraph GATEWAY["2. Backend Modular API Layer (NestJS 10)"]
-        AUTH_GUARD["🛡️ FirebaseAuthGuard & RolesGuard<br/>(RBAC Claims: Admin, Staff, Customer)"]:::apiTier
-        SUB_MODULE["🔄 SubscriptionModule<br/>(Lifecycle State Transitions)"]:::apiTier
-        BILL_MODULE["⚡ BillingModule & Engine<br/>(Automated Cadence Scanner)"]:::apiTier
-        INV_MODULE["🧾 InvoiceModule & PDF Engine<br/>(Idempotent Invoice Pipeline)"]:::apiTier
-        PAY_MODULE["💳 PaymentModule<br/>(Reconciliation Engine)"]:::apiTier
+        AUTH_GUARD["FirebaseAuthGuard & RolesGuard<br/>(RBAC Claims: Admin, Staff, Customer)"]:::apiTier
+        SUB_MODULE["SubscriptionModule<br/>(Lifecycle State Transitions)"]:::apiTier
+        BILL_MODULE["BillingModule & Engine<br/>(Automated Cadence Scanner)"]:::apiTier
+        INV_MODULE["InvoiceModule & PDF Engine<br/>(Idempotent Invoice Pipeline)"]:::apiTier
+        PAY_MODULE["PaymentModule<br/>(Reconciliation Engine)"]:::apiTier
     end
 
     subgraph EVENT_BUS["3. Distributed Domain Event Bus (EventEmitter2)"]
-        BUS["📢 Asynchronous In-Memory Event Hub<br/>(Decouples Write APIs from Heavy Processing)"]:::eventTier
+        BUS["Asynchronous In-Memory Event Hub<br/>(Decouples Write APIs from Heavy Processing)"]:::eventTier
     end
 
     subgraph STORAGE["4. Managed Cloud Database & Storage (Firebase)"]
-        FIRESTORE["🔥 Cloud Firestore Database<br/>(Denormalized NoSQL + Security Rules)"]:::dataTier
-        COUNTERS["📊 counters/analytics<br/>(Pre-Computed KPIs for < 50ms Reads)"]:::dataTier
-        LIVE_STREAM["📡 Firestore onSnapshot Listeners<br/>(Zero-Polling Real-Time Push to Client)"]:::dataTier
-        PDF_STORAGE["📁 Firebase Storage<br/>(Generated Invoice PDFs & Signed URLs)"]:::dataTier
+        FIRESTORE["Cloud Firestore Database<br/>(Denormalized NoSQL + Security Rules)"]:::dataTier
+        COUNTERS["counters/analytics<br/>(Pre-Computed KPIs for < 50ms Reads)"]:::dataTier
+        LIVE_STREAM["Firestore onSnapshot Listeners<br/>(Zero-Polling Real-Time Push to Client)"]:::dataTier
+        PDF_STORAGE["Firebase Storage<br/>(Generated Invoice PDFs & Signed URLs)"]:::dataTier
     end
 
     subgraph WORKERS["5. Async Background Queue & Workers (Redis + BullMQ)"]
-        REDIS[("📦 Redis 7 (In-Memory Queue Store)")]:::asyncTier
-        CRON["⏰ Billing Cron Scheduler<br/>(Hourly Due Subscription Detection)"]:::asyncTier
-        EMAIL_WORKER["✉️ Email Notification Worker<br/>(Transactional Invoicing)"]:::asyncTier
+        REDIS[("Redis 7 (In-Memory Queue Store)")]:::asyncTier
+        CRON["Billing Cron Scheduler<br/>(Hourly Due Subscription Detection)"]:::asyncTier
+        EMAIL_WORKER["Email Notification Worker<br/>(Transactional Invoicing)"]:::asyncTier
     end
 
     %% Flow Connections
@@ -85,12 +85,12 @@ This diagram demonstrates how an invoice is generated and paid through asynchron
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Admin as 👨‍💼 Billing Operator
-    participant API as 🚀 NestJS Billing Service
-    participant DB as 🔥 Cloud Firestore
-    participant Bus as 📢 Domain Event Bus
-    participant PDF as 📄 PDF Generator
-    participant Client as 🖥️ Next.js Web Client
+    actor Admin as Billing Operator
+    participant API as NestJS Billing Service
+    participant DB as Cloud Firestore
+    participant Bus as Domain Event Bus
+    participant PDF as PDF Generator
+    participant Client as Next.js Web Client
 
     Note over Admin,API: 1. Trigger Automated Billing Run
     Admin->>API: POST /api/billing/run
@@ -116,7 +116,7 @@ sequenceDiagram
         Bus->>DB: Recalculate counters/analytics (outstanding balance, KPIs)
     and Instant Real-time UI Update
         DB-->>Client: Firestore onSnapshot triggered (< 50ms)
-        Client->>Client: Dashboard KPIs & Notification Bell automatically updated!
+        Client->>Client: Dashboard KPIs & Notification Bell automatically updated
     end
 ```
 
