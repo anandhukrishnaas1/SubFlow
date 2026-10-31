@@ -73,6 +73,24 @@ export default function SubscriptionsPage() {
     },
   });
 
+  const renewMutation = useMutation({
+    mutationFn: (id: string) => api.renewSubscription(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['kpis'] });
+    },
+  });
+
+  const billingRunMutation = useMutation({
+    mutationFn: () => api.triggerBillingRun(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['kpis'] });
+    },
+  });
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     const selectedPlan = plans.find((p: any) => p.id === newSub.planId) || plans[0];
@@ -130,13 +148,25 @@ export default function SubscriptionsPage() {
               </p>
             </div>
 
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-orange-600/20 transition-all self-start sm:self-auto"
-            >
-              <Plus className="h-4 w-4" />
-              New Subscription
-            </button>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <button
+                onClick={() => billingRunMutation.mutate()}
+                disabled={billingRunMutation.isPending}
+                className="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-orange-50 text-orange-700 border border-orange-200 rounded-xl text-xs font-bold shadow-2xs transition-all disabled:opacity-50"
+                title="Run automated billing & renewal cycle now"
+              >
+                <Repeat className={`h-3.5 w-3.5 ${billingRunMutation.isPending ? 'animate-spin' : ''}`} />
+                {billingRunMutation.isPending ? 'Running Billing...' : 'Run Auto-Billing'}
+              </button>
+
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-orange-600/20 transition-all"
+              >
+                <Plus className="h-4 w-4" />
+                New Subscription
+              </button>
+            </div>
           </div>
 
           {/* Filter Bar */}
@@ -211,6 +241,16 @@ export default function SubscriptionsPage() {
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-right space-x-1.5">
+                          {sub.status !== 'cancelled' && (
+                            <button
+                              onClick={() => renewMutation.mutate(sub.id)}
+                              disabled={renewMutation.isPending}
+                              className="px-2.5 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded text-[11px] font-bold transition-colors disabled:opacity-50"
+                              title="Renew subscription & generate confirmed invoice"
+                            >
+                              Renew
+                            </button>
+                          )}
                           {sub.status !== 'active' && (
                             <button
                               onClick={() => activateMutation.mutate(sub.id)}

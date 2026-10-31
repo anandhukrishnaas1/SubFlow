@@ -56,16 +56,42 @@ export class SubscriptionController {
   @Post('convert-quotation')
   @Roles(UserRole.ADMIN, UserRole.STAFF)
   async convertQuotation(
-    @Body() dto: { quotationId: string; planId: string },
+    @Body() dto: { quotationId: string; planId?: string },
     @CurrentUser('uid') userId: string,
     @CurrentUser('name') userName: string,
   ) {
     return this.subscriptionService.convertFromQuotation(
       dto.quotationId,
-      dto.planId,
+      dto.planId || 'plan_pro_monthly',
       userId,
       userName,
     );
+  }
+
+  @Post('auto-renew')
+  @Roles(UserRole.ADMIN, UserRole.STAFF)
+  async triggerAutoRenewals() {
+    return this.subscriptionService.processAutoRenewals();
+  }
+
+  @Patch(':id/renew')
+  @Roles(UserRole.ADMIN, UserRole.STAFF)
+  async renew(
+    @Param('id') id: string,
+    @CurrentUser('uid') userId: string,
+    @CurrentUser('name') userName: string,
+  ) {
+    return this.subscriptionService.renew(id, userId, userName);
+  }
+
+  @Post(':id/renew')
+  @Roles(UserRole.ADMIN, UserRole.STAFF)
+  async renewPost(
+    @Param('id') id: string,
+    @CurrentUser('uid') userId: string,
+    @CurrentUser('name') userName: string,
+  ) {
+    return this.subscriptionService.renew(id, userId, userName);
   }
 
   @Patch(':id/confirm')

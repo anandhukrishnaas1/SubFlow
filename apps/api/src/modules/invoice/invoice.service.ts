@@ -42,8 +42,9 @@ export class InvoiceService {
     return Promise.all(
       snap.docs.map(async (doc) => {
         const itemsSnap = await doc.ref.collection('items').get();
+        const data = doc.data() as any;
         const items = itemsSnap.docs.map((i) => ({ id: i.id, ...i.data() }));
-        return { id: doc.id, ...doc.data(), items };
+        return { id: doc.id, ...data, items: items.length > 0 ? items : data.items || [] };
       }),
     );
   }
@@ -55,9 +56,10 @@ export class InvoiceService {
     }
 
     const itemsSnap = await doc.ref.collection('items').get();
+    const data = doc.data() as any;
     const items = itemsSnap.docs.map((i) => ({ id: i.id, ...i.data() }));
 
-    return { id: doc.id, ...doc.data(), items };
+    return { id: doc.id, ...data, items: items.length > 0 ? items : data.items || [] };
   }
 
   async create(dto: any): Promise<any> {
@@ -70,10 +72,12 @@ export class InvoiceService {
       if (!existing.empty) {
         const existingDoc = existing.docs[0];
         const itemsSnap = await existingDoc.ref.collection('items').get();
+        const existingData = existingDoc.data() as any;
+        const items = itemsSnap.docs.map((i) => ({ id: i.id, ...i.data() }));
         return {
           id: existingDoc.id,
-          ...existingDoc.data(),
-          items: itemsSnap.docs.map((i) => ({ id: i.id, ...i.data() })),
+          ...existingData,
+          items: items.length > 0 ? items : existingData.items || [],
           _idempotent: true,
         };
       }
@@ -118,7 +122,16 @@ export class InvoiceService {
       };
     });
 
-    const total = Math.max(0, subtotal + totalTax - totalDiscount);
+    if (computedItems.length === 0 && (dto.subtotal || dto.total)) {
+      subtotal = Number(dto.subtotal ?? dto.total) || 0;
+      totalTax = Number(dto.taxAmount) || 0;
+      totalDiscount = Number(dto.discountAmount) || 0;
+    }
+
+    const total =
+      subtotal > 0 || totalTax > 0
+        ? Math.max(0, subtotal + totalTax - totalDiscount)
+        : Math.max(0, Number(dto.total) || 0);
     const paidAmount = Number(dto.paidAmount) || 0;
     const outstandingAmount = Math.max(0, total - paidAmount);
 
