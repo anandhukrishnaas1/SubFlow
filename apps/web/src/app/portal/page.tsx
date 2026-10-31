@@ -63,9 +63,9 @@ export default function CustomerPortalPage() {
             <img
               src="/subflow-logo.png"
               alt="SubFlow"
-              height={40}
-              style={{ height: '40px', width: 'auto', maxHeight: '40px' }}
-              className="h-10 w-auto object-contain"
+              height={36}
+              style={{ height: '36px', width: 'auto', maxHeight: '36px' }}
+              className="h-9 w-auto object-contain"
             />
             <div className="h-8 w-px bg-slate-200" />
             <div>

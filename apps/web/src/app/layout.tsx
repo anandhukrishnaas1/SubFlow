@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description:
     'Modern, event-driven subscription management and recurring billing platform powered by Firebase Firestore and real-time streams.',
   icons: {
-    icon: '/subflow-logo.png',
+    icon: '/subflow-icon.png',
   },
 };
 
