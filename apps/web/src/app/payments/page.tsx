@@ -196,6 +196,7 @@ export default function PaymentsPage() {
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white transition-all font-medium"
                       >
                         <option value="card">Credit Card</option>
+                        <option value="razorpay">Razorpay Gateway (Test Mode)</option>
                         <option value="bank_transfer">Bank Transfer / ACH</option>
                         <option value="upi">UPI / Instant Pay</option>
                         <option value="cash">Cash / Direct</option>

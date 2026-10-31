@@ -43,4 +43,14 @@ export class PaymentController {
   ) {
     return this.paymentService.recordPayment(dto);
   }
+
+  @Post('razorpay/create-order')
+  async createRazorpayOrder(@Body() dto: { invoiceId: string; amount?: number }) {
+    return this.paymentService.createRazorpayOrder(dto);
+  }
+
+  @Post('razorpay/verify')
+  async verifyRazorpayPayment(@Body() dto: any) {
+    return this.paymentService.verifyRazorpayPayment(dto);
+  }
 }

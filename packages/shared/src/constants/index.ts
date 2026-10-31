@@ -52,6 +52,7 @@ export enum PaymentMethod {
   UPI = 'upi',
   CARD = 'card',
   ONLINE = 'online',
+  RAZORPAY = 'razorpay',
   OTHER = 'other',
 }
 

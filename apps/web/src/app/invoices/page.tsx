@@ -38,28 +38,9 @@ export default function InvoicesPage() {
   const handleDownloadPdf = async (inv: any) => {
     setDownloadingId(inv.id);
     try {
-      const res = await fetch(`http://localhost:4000/api/invoices/${inv.id}/pdf`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('subflow_token') || 'demo-admin-token'}`,
-        },
-      });
-
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Invoice-${inv.number}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } else {
-        // Fallback print/view alert
-        alert(`Generating PDF preview for ${inv.number}. Download initiated.`);
-      }
+      await api.downloadInvoicePdf(inv.id, inv.number);
     } catch {
-      alert(`Invoice ${inv.number} PDF generated.`);
+      alert(`Could not download invoice ${inv.number} PDF. Please verify backend service.`);
     } finally {
       setDownloadingId(null);
     }

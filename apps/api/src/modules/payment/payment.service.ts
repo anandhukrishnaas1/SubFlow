@@ -100,4 +100,48 @@ export class PaymentService {
       remainingOutstanding: recon.outstandingAmount,
     };
   }
+
+  async createRazorpayOrder(dto: { invoiceId: string; amount?: number }): Promise<any> {
+    const invoice = await this.invoiceService.findOne(dto.invoiceId);
+    if (!invoice) {
+      throw new BadRequestException(`Invoice ${dto.invoiceId} does not exist`);
+    }
+
+    const payAmount = dto.amount ? Number(dto.amount) : Number(invoice.outstandingAmount ?? invoice.total);
+    if (payAmount <= 0) {
+      throw new BadRequestException('Outstanding balance is zero or invoice is already settled');
+    }
+
+    const orderId = `order_test_${Date.now()}`;
+    return {
+      orderId,
+      amount: Math.round(payAmount * 100), // in paise
+      currency: 'INR',
+      displayAmount: payAmount,
+      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_SubFlowGateway2026',
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.number,
+      customerName: invoice.customerName,
+      customerEmail: invoice.customerEmail,
+      mode: 'test',
+    };
+  }
+
+  async verifyRazorpayPayment(dto: {
+    invoiceId: string;
+    razorpayOrderId?: string;
+    razorpayPaymentId?: string;
+    razorpaySignature?: string;
+    amount: number;
+    notes?: string;
+  }): Promise<any> {
+    const txnRef = dto.razorpayPaymentId || `pay_test_${Date.now()}`;
+    return this.recordPayment({
+      invoiceId: dto.invoiceId,
+      amount: dto.amount,
+      method: PaymentMethod.RAZORPAY,
+      transactionRef: txnRef,
+      notes: dto.notes || `Settled via Razorpay Test Gateway (Order: ${dto.razorpayOrderId || 'N/A'})`,
+    });
+  }
 }

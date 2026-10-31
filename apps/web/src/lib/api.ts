@@ -690,6 +690,33 @@ export const api = {
     return fetchFromApi(`/payments${query ? `?${query}` : ''}`);
   },
   recordPayment: (data: any) => fetchFromApi('/payments', { method: 'POST', body: JSON.stringify(data) }),
+  createRazorpayOrder: (data: { invoiceId: string; amount?: number }) =>
+    fetchFromApi('/payments/razorpay/create-order', { method: 'POST', body: JSON.stringify(data) }),
+  verifyRazorpayPayment: (data: any) =>
+    fetchFromApi('/payments/razorpay/verify', { method: 'POST', body: JSON.stringify(data) }),
+
+  downloadInvoicePdf: async (invoiceId: string, invoiceNumber: string) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('subflow_token') || 'demo-admin-token' : 'demo-admin-token';
+    const res = await fetch(`http://localhost:4000/api/invoices/${invoiceId}/pdf`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-mock-role': typeof window !== 'undefined' ? localStorage.getItem('subflow_role') || 'admin' : 'admin',
+      },
+    });
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice-${invoiceNumber || invoiceId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      return true;
+    }
+    throw new Error('Failed to generate PDF');
+  },
 
   // Quotations
   getQuotations: () => fetchFromApi('/quotations'),
