@@ -11,9 +11,15 @@ export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 
   @Post('run')
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.STAFF)
   async triggerBillingRun() {
     return this.billingService.runBillingCycle();
+  }
+
+  @Post('check-overdue')
+  @Roles(UserRole.ADMIN, UserRole.STAFF)
+  async triggerOverdueCheck() {
+    return this.billingService.markOverdueInvoices();
   }
 
   @Get('due')

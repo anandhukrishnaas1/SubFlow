@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { FirebaseService } from '../../firebase/firebase.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EVENTS } from '@subflow/events';
 import { QuotationStatus } from '@subflow/shared';
@@ -8,6 +9,7 @@ import { QuotationStatus } from '@subflow/shared';
 export class QuotationService {
   constructor(
     private readonly firebase: FirebaseService,
+    private readonly subscriptionService: SubscriptionService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -23,21 +25,25 @@ export class QuotationService {
 
   async findAll(query?: { customerId?: string; status?: string }): Promise<any[]> {
     let q: FirebaseFirestore.Query = this.collection;
+    const hasFilter = Boolean(query?.customerId || query?.status);
     if (query?.customerId) {
       q = q.where('customerId', '==', query.customerId);
     }
     if (query?.status) {
       q = q.where('status', '==', query.status);
     }
-    const snap = await q.orderBy('createdAt', 'desc').get();
+    const snap = hasFilter ? await q.get() : await q.orderBy('createdAt', 'desc').get();
 
-    return Promise.all(
+    const results = await Promise.all(
       snap.docs.map(async (doc) => {
         const itemsSnap = await doc.ref.collection('items').get();
+        const data = doc.data() as any;
         const items = itemsSnap.docs.map((i) => ({ id: i.id, ...i.data() }));
-        return { id: doc.id, ...doc.data(), items };
+        return { id: doc.id, ...data, items: items.length > 0 ? items : data.items || [] };
       }),
     );
+
+    return results.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
   }
 
   async findOne(id: string): Promise<any> {
@@ -47,9 +53,10 @@ export class QuotationService {
     }
 
     const itemsSnap = await doc.ref.collection('items').get();
+    const data = doc.data() as any;
     const items = itemsSnap.docs.map((i) => ({ id: i.id, ...i.data() }));
 
-    return { id: doc.id, ...doc.data(), items };
+    return { id: doc.id, ...data, items: items.length > 0 ? items : data.items || [] };
   }
 
   async create(dto: any, performedBy: string): Promise<any> {
@@ -166,15 +173,21 @@ export class QuotationService {
     }
 
     const data = doc.data() as any;
-    if (data.status === QuotationStatus.ACCEPTED) {
-      return { id, status: data.status, message: 'Quotation already accepted' };
-    }
+    const nowIso = new Date().toISOString();
 
     await ref.update({
       status: QuotationStatus.ACCEPTED,
-      acceptedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      acceptedAt: data.acceptedAt || nowIso,
+      updatedAt: nowIso,
     });
+
+    // Auto-create active subscription and confirmed invoice upon accepting quotation
+    const converted = await this.subscriptionService.convertFromQuotation(
+      id,
+      data.planId || 'plan_pro_monthly',
+      'system',
+      'Quote Acceptance Auto-Conversion',
+    );
 
     this.eventEmitter.emit(EVENTS.QUOTATION_ACCEPTED, {
       quotationId: id,
@@ -183,7 +196,16 @@ export class QuotationService {
       total: data.total,
     });
 
-    return { id, status: QuotationStatus.ACCEPTED };
+    return {
+      id,
+      status: QuotationStatus.ACCEPTED,
+      convertedToSubscriptionId: converted.id,
+      convertedToSubscriptionNumber: converted.number,
+      convertedInvoiceId: converted.invoice?.id || null,
+      convertedInvoiceNumber: converted.invoice?.number || null,
+      subscription: converted,
+      invoice: converted.invoice || null,
+    };
   }
 
   async reject(id: string, reason?: string): Promise<any> {
