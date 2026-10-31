@@ -275,6 +275,27 @@ function handleFallback(endpoint: string, options: RequestInit = {}): any {
   const method = (options.method || 'GET').toUpperCase();
 
   if (path === '/analytics/kpis') return demoStore.kpis;
+  if (path === '/analytics/revenue-trends') {
+    return [
+      { month: 'Jun', revenue: 420 },
+      { month: 'Jul', revenue: 680 },
+      { month: 'Aug', revenue: 950 },
+      { month: 'Sep', revenue: 1120 },
+      { month: 'Oct', revenue: 1450 },
+      { month: 'Nov', revenue: Number(demoStore.kpis.totalRevenue) || 93.6 },
+    ];
+  }
+  if (path === '/analytics/subscription-breakdown') {
+    return {
+      total: demoStore.subscriptions.length,
+      statusCounts: {
+        active: demoStore.subscriptions.filter((s: any) => s.status === 'active').length,
+        paused: demoStore.subscriptions.filter((s: any) => s.status === 'paused').length,
+        confirmed: demoStore.subscriptions.filter((s: any) => s.status === 'confirmed').length,
+        cancelled: demoStore.subscriptions.filter((s: any) => s.status === 'cancelled').length,
+      },
+    };
+  }
   if (path === '/products') {
     if (method === 'POST') {
       const body = JSON.parse((options.body as string) || '{}');

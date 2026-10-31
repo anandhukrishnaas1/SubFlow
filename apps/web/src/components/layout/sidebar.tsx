@@ -64,7 +64,7 @@ export function Sidebar() {
         {/* Brand Header */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800/60">
           <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform">
               <Sparkles className="h-4.5 w-4.5 text-white" />
             </div>
             <div>
@@ -121,7 +121,7 @@ export function Sidebar() {
         <button
           onClick={handleRunBilling}
           disabled={runningBilling}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-lg shadow-md shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-lg shadow-md shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-50"
         >
           <Zap className={cn('h-3.5 w-3.5', runningBilling && 'animate-spin')} />
           {runningBilling ? 'Processing Run...' : 'Run Billing Engine'}

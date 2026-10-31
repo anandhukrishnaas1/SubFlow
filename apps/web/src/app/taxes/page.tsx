@@ -46,7 +46,7 @@ export default function TaxesPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-                <Percent className="h-6 w-6 text-indigo-400" />
+                <Percent className="h-6 w-6 text-blue-400" />
                 Tax Rules & Jurisdictions
               </h1>
               <p className="text-sm text-slate-400 mt-1">

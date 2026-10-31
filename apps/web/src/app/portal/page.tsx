@@ -39,7 +39,7 @@ export default function CustomerPortalPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Top Banner & Switch Back to Admin */}
-      <div className="bg-gradient-to-r from-blue-900/60 via-indigo-900/40 to-slate-900/60 border-b border-blue-500/20 px-6 py-2.5 flex items-center justify-between text-xs">
+      <div className="bg-gradient-to-r from-blue-950/80 via-slate-900/80 to-slate-950/80 border-b border-blue-500/20 px-6 py-2.5 flex items-center justify-between text-xs">
         <div className="flex items-center gap-2 text-blue-300">
           <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span>Customer Self-Service Billing Portal</span>
@@ -61,7 +61,7 @@ export default function CustomerPortalPage() {
         {/* Welcome Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-blue-500/25">
+            <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/25">
               <Sparkles className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -128,7 +128,7 @@ export default function CustomerPortalPage() {
         {/* Invoices History Section */}
         <section className="space-y-4">
           <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <FileText className="h-4 w-4 text-indigo-400" />
+            <FileText className="h-4 w-4 text-blue-400" />
             Billing Statements & Invoices
           </h2>
 

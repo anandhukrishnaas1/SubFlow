@@ -185,7 +185,7 @@ export default function QuotationsPage() {
                               });
                               alert(`Quotation ${q.number} converted into live active subscription!`);
                             }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 rounded text-[11px] font-medium transition-colors"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded text-[11px] font-medium transition-colors"
                             title="Convert into live recurring subscription"
                           >
                             <ArrowRightCircle className="h-3 w-3" /> Convert to Sub

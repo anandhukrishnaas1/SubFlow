@@ -143,7 +143,7 @@ export default function DashboardPage() {
             <div className="relative overflow-hidden rounded-2xl border border-slate-800/80 bg-gradient-to-b from-slate-900/90 to-slate-900/40 p-5 backdrop-blur-xl shadow-xl">
               <div className="flex items-center justify-between text-slate-400 mb-2">
                 <span className="text-xs font-medium uppercase tracking-wider">Active Subscriptions</span>
-                <div className="h-8 w-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                <div className="h-8 w-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
                   <Repeat className="h-4 w-4" />
                 </div>
               </div>
@@ -158,7 +158,7 @@ export default function DashboardPage() {
               <p className="text-[11px] text-slate-500 mt-2">
                 From <span className="text-slate-300 font-medium">{kpis.totalCustomers ?? 3} active customer accounts</span>
               </p>
-              <div className="absolute -bottom-6 -right-6 h-24 w-24 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute -bottom-6 -right-6 h-24 w-24 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
             </div>
 
             {/* Total Revenue */}
