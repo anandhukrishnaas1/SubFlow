@@ -6,6 +6,7 @@ import { getFirebaseClient } from '@subflow/firebase';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  updateProfile,
   signInWithPopup,
   GoogleAuthProvider,
   OAuthProvider,
@@ -26,9 +27,11 @@ export interface UserProfile {
 interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
-  login: (email: string, password?: string, role?: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  loginWithApple: () => Promise<void>;
+  login: (email: string, password: string, role?: string) => Promise<UserProfile>;
+  register: (name: string, email: string, password: string, role?: string) => Promise<UserProfile>;
+  loginWithGoogle: () => Promise<UserProfile>;
+  loginWithApple: () => Promise<UserProfile>;
+  loginWithDemo: (role: 'admin' | 'staff' | 'customer') => void;
   logout: () => Promise<void>;
   switchRole: (role: 'admin' | 'staff' | 'customer') => void;
 }
@@ -36,9 +39,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  login: async () => {},
-  loginWithGoogle: async () => {},
-  loginWithApple: async () => {},
+  login: async () => ({ uid: '', email: '', displayName: '', role: 'admin' }),
+  register: async () => ({ uid: '', email: '', displayName: '', role: 'admin' }),
+  loginWithGoogle: async () => ({ uid: '', email: '', displayName: '', role: 'admin' }),
+  loginWithApple: async () => ({ uid: '', email: '', displayName: '', role: 'admin' }),
+  loginWithDemo: () => {},
   logout: async () => {},
   switchRole: () => {},
 });
@@ -96,25 +101,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           };
 
           setUser(profile);
+          localStorage.setItem('subflow_authenticated', 'true');
           localStorage.setItem('subflow_role', savedRole);
           localStorage.setItem('subflow_uid', profile.uid);
           setLoading(false);
           return;
         }
 
-        // If no active Firebase session, fallback to saved demo profile
-        const savedRole = localStorage.getItem('subflow_role') || 'admin';
-        const active = DEMO_USERS[savedRole] || DEMO_USERS.admin;
-        setUser(active);
-        localStorage.setItem('subflow_role', active.role);
-        localStorage.setItem('subflow_uid', active.uid);
+        // Check if an explicit offline/demo session was established
+        const isAuthenticated = localStorage.getItem('subflow_authenticated') === 'true';
+        if (isAuthenticated) {
+          const savedRole = localStorage.getItem('subflow_role') || 'admin';
+          const active = DEMO_USERS[savedRole] || DEMO_USERS.admin;
+          setUser(active);
+        } else {
+          // Unauthenticated state: user cannot access protected routes until sign-in
+          setUser(null);
+        }
         setLoading(false);
       });
     } catch (err) {
-      console.warn('Firebase client init fallback to demo store:', err);
-      const savedRole = localStorage.getItem('subflow_role') || 'admin';
-      const active = DEMO_USERS[savedRole] || DEMO_USERS.admin;
-      setUser(active);
+      console.warn('Firebase client initialization note:', err);
+      const isAuthenticated = localStorage.getItem('subflow_authenticated') === 'true';
+      if (isAuthenticated) {
+        const savedRole = localStorage.getItem('subflow_role') || 'admin';
+        const active = DEMO_USERS[savedRole] || DEMO_USERS.admin;
+        setUser(active);
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     }
 
@@ -123,61 +138,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const login = async (email: string, password: string = 'SubFlowPass2026!', role: string = 'admin') => {
+  const login = async (email: string, password: string, role: string = 'admin'): Promise<UserProfile> => {
     setLoading(true);
-
     try {
       const { auth } = getFirebaseClient();
-      let credential;
-      try {
-        credential = await signInWithEmailAndPassword(auth, email, password);
-      } catch (err: any) {
-        // If user not registered yet, auto-register in Firebase project
-        if (
-          err.code === 'auth/user-not-found' ||
-          err.code === 'auth/invalid-credential' ||
-          err.code === 'auth/invalid-email'
-        ) {
-          try {
-            credential = await createUserWithEmailAndPassword(auth, email, password);
-          } catch {
-            // Continue with fallback profile below
-          }
-        }
-      }
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      const token = await credential.user.getIdToken();
+      localStorage.setItem('subflow_token', token);
+      localStorage.setItem('subflow_authenticated', 'true');
+      localStorage.setItem('subflow_role', role);
+      localStorage.setItem('subflow_uid', credential.user.uid);
 
-      if (credential?.user) {
-        const token = await credential.user.getIdToken();
-        localStorage.setItem('subflow_token', token);
-        const profile: UserProfile = {
-          uid: credential.user.uid,
-          email: credential.user.email || email,
-          displayName: credential.user.displayName || email.split('@')[0],
-          role: role as any,
-        };
-        setUser(profile);
-        localStorage.setItem('subflow_role', role);
-        localStorage.setItem('subflow_uid', profile.uid);
-        return;
-      }
-    } catch {
-      // Continue to local profile fallback
+      const profile: UserProfile = {
+        uid: credential.user.uid,
+        email: credential.user.email || email,
+        displayName: credential.user.displayName || email.split('@')[0],
+        role: role as any,
+      };
+      setUser(profile);
+      return profile;
+    } finally {
+      setLoading(false);
     }
-
-    // Demo fallback for instant access
-    const newUser: UserProfile = {
-      uid: `user_${Date.now()}`,
-      email,
-      displayName: email.split('@')[0],
-      role: role as any,
-    };
-    setUser(newUser);
-    localStorage.setItem('subflow_role', role);
-    localStorage.setItem('subflow_uid', newUser.uid);
-    setLoading(false);
   };
 
-  const loginWithGoogle = async () => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    role: string = 'admin'
+  ): Promise<UserProfile> => {
+    setLoading(true);
+    try {
+      const { auth } = getFirebaseClient();
+      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      if (name && credential.user) {
+        try {
+          await updateProfile(credential.user, { displayName: name });
+        } catch {
+          // Ignore
+        }
+      }
+      const token = await credential.user.getIdToken();
+      localStorage.setItem('subflow_token', token);
+      localStorage.setItem('subflow_authenticated', 'true');
+      localStorage.setItem('subflow_role', role);
+      localStorage.setItem('subflow_uid', credential.user.uid);
+
+      const profile: UserProfile = {
+        uid: credential.user.uid,
+        email: credential.user.email || email,
+        displayName: name || email.split('@')[0],
+        role: role as any,
+      };
+      setUser(profile);
+      return profile;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginWithGoogle = async (): Promise<UserProfile> => {
     setLoading(true);
     try {
       const { auth } = getFirebaseClient();
@@ -186,6 +207,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await signInWithPopup(auth, provider);
       const token = await result.user.getIdToken();
       localStorage.setItem('subflow_token', token);
+      localStorage.setItem('subflow_authenticated', 'true');
+      localStorage.setItem('subflow_role', 'admin');
+      localStorage.setItem('subflow_uid', result.user.uid);
 
       const profile: UserProfile = {
         uid: result.user.uid,
@@ -196,17 +220,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       setUser(profile);
-      localStorage.setItem('subflow_role', 'admin');
-      localStorage.setItem('subflow_uid', profile.uid);
-    } catch (err: any) {
-      console.warn('Google sign in canceled or failed, using demo fallback:', err?.message);
-      login('google.admin@subflow.io', 'pass', 'admin');
+      return profile;
     } finally {
       setLoading(false);
     }
   };
 
-  const loginWithApple = async () => {
+  const loginWithApple = async (): Promise<UserProfile> => {
     setLoading(true);
     try {
       const { auth } = getFirebaseClient();
@@ -214,6 +234,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await signInWithPopup(auth, provider);
       const token = await result.user.getIdToken();
       localStorage.setItem('subflow_token', token);
+      localStorage.setItem('subflow_authenticated', 'true');
+      localStorage.setItem('subflow_role', 'admin');
+      localStorage.setItem('subflow_uid', result.user.uid);
 
       const profile: UserProfile = {
         uid: result.user.uid,
@@ -224,14 +247,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       setUser(profile);
-      localStorage.setItem('subflow_role', 'admin');
-      localStorage.setItem('subflow_uid', profile.uid);
-    } catch (err: any) {
-      console.warn('Apple sign in canceled or failed:', err?.message);
-      login('apple.admin@subflow.io', 'pass', 'admin');
+      return profile;
     } finally {
       setLoading(false);
     }
+  };
+
+  const loginWithDemo = (role: 'admin' | 'staff' | 'customer') => {
+    const nextUser = DEMO_USERS[role] || DEMO_USERS.admin;
+    setUser(nextUser);
+    localStorage.setItem('subflow_authenticated', 'true');
+    localStorage.setItem('subflow_role', nextUser.role);
+    localStorage.setItem('subflow_uid', nextUser.uid);
   };
 
   const logout = async () => {
@@ -242,6 +269,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore
     }
     setUser(null);
+    localStorage.removeItem('subflow_authenticated');
     localStorage.removeItem('subflow_token');
     localStorage.removeItem('subflow_role');
     localStorage.removeItem('subflow_uid');
@@ -250,6 +278,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const switchRole = (role: 'admin' | 'staff' | 'customer') => {
     const nextUser = DEMO_USERS[role] || DEMO_USERS.admin;
     setUser(nextUser);
+    localStorage.setItem('subflow_authenticated', 'true');
     localStorage.setItem('subflow_role', nextUser.role);
     localStorage.setItem('subflow_uid', nextUser.uid);
   };
@@ -260,8 +289,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         loading,
         login,
+        register,
         loginWithGoogle,
         loginWithApple,
+        loginWithDemo,
         logout,
         switchRole,
       }}

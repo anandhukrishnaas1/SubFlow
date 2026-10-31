@@ -43,7 +43,7 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, switchRole } = useAuth();
+  const { user, switchRole, logout } = useAuth();
   const { mobileOpen, closeMobile, toggleMobile } = useSidebar();
   const [runningBilling, setRunningBilling] = React.useState(false);
   const [billingResult, setBillingResult] = React.useState<string | null>(null);
@@ -184,13 +184,17 @@ export function Sidebar() {
               <p className="text-[11px] text-slate-500 truncate">{user?.email || 'admin@subflow.io'}</p>
             </div>
           </div>
-          <Link
-            href="/login"
-            title="Switch Account / Sign In"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-200/60 transition-colors shrink-0"
+          <button
+            type="button"
+            onClick={async () => {
+              await logout();
+              window.location.href = '/login';
+            }}
+            title="Sign Out / Switch Account"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors shrink-0"
           >
             <LogOut className="h-4 w-4" />
-          </Link>
+          </button>
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   Mail,
   Lock,
+  User as UserIcon,
   Eye,
   EyeOff,
   ArrowRight,
@@ -17,51 +18,81 @@ import {
   Globe,
   Building2,
   X,
+  AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, loginWithGoogle, loginWithApple } = useAuth();
+  const { login, register, loginWithGoogle, loginWithApple, loginWithDemo } = useAuth();
 
+  const [mode, setMode] = useState<'signin' | 'register'>('signin');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('admin@subflow.io');
   const [password, setPassword] = useState('admin_pass_2026');
   const [role, setRole] = useState<'admin' | 'staff' | 'customer'>('admin');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
 
   const handleRolePreset = (preset: 'admin' | 'staff' | 'customer') => {
     setRole(preset);
-    if (preset === 'admin') {
-      setEmail('admin@subflow.io');
-      setPassword('admin_pass_2026');
-    } else if (preset === 'staff') {
-      setEmail('staff@subflow.io');
-      setPassword('staff_pass_2026');
+    setError(null);
+    loginWithDemo(preset);
+    if (preset === 'customer') {
+      router.push('/portal');
     } else {
-      setEmail('finance@acmecorp.com');
-      setPassword('customer_portal_key');
+      router.push('/dashboard');
+    }
+  };
+
+  const getFirebaseErrorMessage = (err: any) => {
+    const code = err?.code || '';
+    switch (code) {
+      case 'auth/invalid-credential':
+      case 'auth/wrong-password':
+      case 'auth/user-not-found':
+        return 'Invalid email or password. Please check your credentials or click a demo role.';
+      case 'auth/email-already-in-use':
+        return 'An account with this email already exists. Please switch to Sign In.';
+      case 'auth/weak-password':
+        return 'Password is too weak. Please use at least 6 characters.';
+      case 'auth/invalid-email':
+        return 'Please enter a valid work email address.';
+      case 'auth/popup-closed-by-user':
+        return 'Sign-in window was closed before finishing authentication.';
+      case 'auth/cancelled-popup-request':
+        return 'Another sign-in window is already active.';
+      default:
+        return err?.message || 'Authentication error. Please check your internet connection.';
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !password) return;
 
     setLoading(true);
+    setError(null);
+
     try {
-      await login(email, password, role);
+      if (mode === 'register') {
+        await register(name || email.split('@')[0], email, password, role);
+      } else {
+        await login(email, password, role);
+      }
+
       if (role === 'customer') {
         router.push('/portal');
       } else {
         router.push('/dashboard');
       }
-    } catch {
-      router.push('/dashboard');
+    } catch (err: any) {
+      setError(getFirebaseErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -69,11 +100,12 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
+    setError(null);
     try {
       await loginWithGoogle();
       router.push('/dashboard');
-    } catch {
-      router.push('/dashboard');
+    } catch (err: any) {
+      setError(getFirebaseErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -81,11 +113,12 @@ export default function LoginPage() {
 
   const handleAppleSignIn = async () => {
     setLoading(true);
+    setError(null);
     try {
       await loginWithApple();
       router.push('/dashboard');
-    } catch {
-      router.push('/dashboard');
+    } catch (err: any) {
+      setError(getFirebaseErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -121,83 +154,210 @@ export default function LoginPage() {
         </svg>
 
         <svg
-          className="absolute -bottom-36 -left-36 w-[650px] h-[650px] text-amber-600/5"
-          viewBox="0 0 600 600"
+          className="absolute -bottom-48 -left-32 w-[800px] h-[600px] text-stone-900/4"
+          viewBox="0 0 800 600"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            d="M 50,300 Q 150,100 300,300 T 550,300"
-            stroke="currentColor"
-            strokeWidth="2"
-            fill="none"
-          />
-          <path
-            d="M 50,350 Q 180,150 300,350 T 550,350"
+            d="M 0 100 C 150 40, 250 160, 400 120 C 550 80, 650 200, 800 140"
             stroke="currentColor"
             strokeWidth="1.5"
-            strokeDasharray="4 6"
-            fill="none"
+            strokeDasharray="8 6"
           />
           <path
-            d="M 50,400 Q 200,200 300,400 T 550,400"
+            d="M 0 200 C 180 140, 280 260, 450 220 C 620 180, 720 300, 800 240"
             stroke="currentColor"
             strokeWidth="1.5"
-            fill="none"
+          />
+          <path
+            d="M 0 300 C 120 240, 220 360, 380 320 C 540 280, 640 400, 800 340"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeDasharray="4 4"
           />
         </svg>
       </div>
 
-      {/* Top Floating Mini Header */}
-      <header className="relative z-10 px-6 sm:px-12 py-5 flex items-center justify-between max-w-7xl mx-auto w-full">
-        <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          <img
-            src="/subflow-logo.png"
-            alt="SubFlow"
-            height={34}
-            style={{ height: '34px', width: 'auto', maxHeight: '34px' }}
-            className="h-8 sm:h-9 w-auto object-contain transition-transform group-hover:scale-105"
-          />
+      {/* Top Navigation Bar with SubFlow Verified Branding */}
+      <header className="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="relative">
+            {/* Custom Vector SubFlow Scallop Badge */}
+            <svg className="w-10 h-10 text-orange-600 transition-transform group-hover:scale-105" viewBox="0 0 100 100" fill="currentColor">
+              <path d="M50 0 C60 10, 65 15, 75 15 C85 15, 90 20, 95 30 C100 40, 100 45, 100 50 C100 55, 100 60, 95 70 C90 80, 85 85, 75 85 C65 85, 60 90, 50 100 C40 90, 35 85, 25 85 C15 85, 10 80, 5 70 C0 60, 0 55, 0 50 C0 45, 0 40, 5 30 C10 20, 15 15, 25 15 C35 15, 40 10, 50 0 Z" />
+              <path
+                d="M32 52 L44 64 L68 38"
+                stroke="#ffffff"
+                strokeWidth="10"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            </svg>
+          </div>
+          <div>
+            <span className="text-xl font-black text-stone-900 tracking-tight block leading-none">
+              SubFlow
+            </span>
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-orange-600 block mt-0.5">
+              Automated Billing
+            </span>
+          </div>
         </Link>
 
         <div className="flex items-center gap-3">
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-stone-600 bg-white/70 border border-stone-200/80 backdrop-blur-xs">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            Live Firebase Connected
+          </span>
           <Link
-            href="/portal"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-stone-600 hover:text-stone-900 bg-white/80 hover:bg-white border border-stone-200/90 shadow-2xs transition-all"
+            href="/login"
+            className="text-xs font-bold text-stone-700 hover:text-stone-900 bg-white/80 border border-stone-200/90 px-4 py-2 rounded-full shadow-2xs hover:bg-stone-50 transition-colors"
           >
-            <Building2 className="h-3.5 w-3.5 text-orange-600" />
-            <span>Customer Portal</span>
-          </Link>
-
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold text-white bg-[#18181b] hover:bg-black shadow-2xs transition-all active:scale-95"
-          >
-            <span>Console Demo</span>
-            <ArrowRight className="h-3 w-3" />
+            Security Portal
           </Link>
         </div>
       </header>
 
-      {/* Main Content: Split-Screen Dual Column Grid */}
-      <main className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-8 py-6 my-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-          {/* Left Column: The Login Card */}
-          <div className="lg:col-span-6 max-w-xl mx-auto w-full">
-            <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#e5e2da] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] space-y-6">
-              {/* Title & Introduction */}
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-50 border border-orange-200/80 text-[11px] font-bold text-orange-700 mb-3">
-                  <ShieldCheck className="h-3.5 w-3.5 text-orange-600" />
-                  <span>SubFlow Unified Authentication</span>
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
-                  Welcome to SubFlow
-                </h1>
-                <p className="text-xs sm:text-sm text-stone-500 mt-1 font-medium">
-                  Enter your credentials to manage recurring contracts, billing runs, and real-time revenue analytics.
+      {/* Main Authentication Grid */}
+      <main className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center flex-1">
+        {/* Left Column: Visual Vector Telemetry & Value Pillars */}
+        <div className="hidden lg:flex lg:col-span-6 flex-col justify-center space-y-8 pr-4">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-100/80 border border-orange-200 text-orange-800 text-xs font-extrabold">
+              <Sparkles className="h-3.5 w-3.5 text-orange-600" />
+              <span>Enterprise Recurring Revenue Engine</span>
+            </div>
+            <h2 className="text-4xl sm:text-5xl font-black text-stone-900 tracking-tight leading-[1.1]">
+              Subscriptions. Billing. <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-amber-600 to-amber-700">
+                Automated without friction.
+              </span>
+            </h2>
+            <p className="text-sm text-stone-600 font-medium leading-relaxed max-w-lg">
+              Manage recurring cycles, smart payment retry cascades, and real-time revenue telemetry from a single porcelain dashboard.
+            </p>
+          </div>
+
+          {/* Floating Glassmorphic Telemetry Cards */}
+          <div className="grid grid-cols-2 gap-4 max-w-lg">
+            {/* Card 1: Live MRR Pulse */}
+            <div className="p-5 rounded-3xl bg-white/90 backdrop-blur-md border border-stone-200/80 shadow-[0_8px_30px_-5px_rgba(0,0,0,0.04)] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-stone-500">Live MRR Stream</span>
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-black text-stone-900 font-mono">$42,860</span>
+                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  +18.4%
+                </span>
+              </div>
+              {/* Vector Barcode Histogram */}
+              <div className="h-8 flex items-end gap-1 pt-1">
+                {[60, 45, 75, 90, 65, 80, 95, 70, 85, 100].map((h, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 rounded-full bg-gradient-to-t from-orange-600 to-amber-400"
+                    style={{ height: `${h}%` }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Card 2: Goal Speedometer Preview */}
+            <div className="p-5 rounded-3xl bg-gradient-to-br from-orange-600 to-amber-600 text-white shadow-[0_12px_36px_-6px_rgba(234,88,12,0.35)] flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-orange-100">Monthly Target</span>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-white/20 text-white">
+                  On Pace
+                </span>
+              </div>
+              <div className="py-1">
+                <span className="text-3xl font-black tracking-tight">85%</span>
+                <p className="text-[11px] text-orange-100 font-medium mt-0.5">
+                  $85,000 of $100k target
                 </p>
               </div>
+              <div className="w-full bg-black/20 h-1.5 rounded-full overflow-hidden flex">
+                <div className="bg-white h-full rounded-full" style={{ width: '85%' }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Trust badges */}
+          <div className="flex items-center gap-6 pt-2 text-xs font-semibold text-stone-500">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" /> SOC2 Type II Certified
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-4 w-4 text-orange-600" /> 99.99% Cloud SLA
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Globe className="h-4 w-4 text-stone-600" /> Global Currency Ready
+            </span>
+          </div>
+        </div>
+
+        {/* Right Column: Unified Login & Registration Form Card */}
+        <div className="lg:col-span-6 flex justify-center">
+          <div className="w-full max-w-md bg-white rounded-3xl p-7 sm:p-9 border border-[#e5e2da] shadow-[0_12px_45px_-8px_rgba(0,0,0,0.06)] relative">
+            <div className="space-y-5">
+              {/* Form Title & Badge */}
+              <div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-700 text-[11px] font-bold mb-2">
+                  <ShieldCheck className="h-3 w-3" /> SubFlow Unified Authentication
+                </span>
+                <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
+                  {mode === 'signin' ? 'Welcome to SubFlow' : 'Create Your Account'}
+                </h1>
+                <p className="text-xs text-stone-500 mt-1 font-medium leading-relaxed">
+                  {mode === 'signin'
+                    ? 'Enter your credentials to manage recurring contracts and billing.'
+                    : 'Get started with instant enterprise subscription billing.'}
+                </p>
+              </div>
+
+              {/* Mode Switcher Pill Tabs: Sign In vs Create Account */}
+              <div className="flex p-1 bg-stone-100/80 rounded-2xl border border-stone-200/80">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('signin');
+                    setError(null);
+                  }}
+                  className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    mode === 'signin'
+                      ? 'bg-white text-stone-900 shadow-xs'
+                      : 'text-stone-500 hover:text-stone-900'
+                  }`}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('register');
+                    setError(null);
+                  }}
+                  className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    mode === 'register'
+                      ? 'bg-white text-stone-900 shadow-xs'
+                      : 'text-stone-500 hover:text-stone-900'
+                  }`}
+                >
+                  Create Account
+                </button>
+              </div>
+
+              {/* Error Alert Box */}
+              {error && (
+                <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-start gap-2.5 animate-in fade-in duration-150">
+                  <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                  <p className="leading-snug">{error}</p>
+                </div>
+              )}
 
               {/* 1-Click Role Presets for Instant Demo Evaluation */}
               <div className="p-3 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-2">
@@ -205,7 +365,7 @@ export default function LoginPage() {
                   <span className="flex items-center gap-1">
                     <Zap className="h-3 w-3 text-orange-500" /> Quick Demo Role Login:
                   </span>
-                  <span className="text-stone-400 font-normal">Click to switch</span>
+                  <span className="text-stone-400 font-normal">Click to launch</span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-1.5">
@@ -214,11 +374,7 @@ export default function LoginPage() {
                       key={r}
                       type="button"
                       onClick={() => handleRolePreset(r)}
-                      className={`text-[11px] font-bold py-1.5 px-2 rounded-xl capitalize transition-all border ${
-                        role === r
-                          ? 'bg-[#18181b] text-white border-black shadow-xs'
-                          : 'bg-white text-stone-600 hover:text-stone-900 border-stone-200 hover:bg-stone-100/80'
-                      }`}
+                      className="text-[11px] font-bold py-1.5 px-2 rounded-xl capitalize transition-all border bg-white text-stone-700 hover:text-white hover:bg-stone-900 border-stone-200 shadow-2xs active:scale-95"
                     >
                       {r === 'admin' ? 'Super Admin' : r === 'staff' ? 'Billing Ops' : 'Subscriber'}
                     </button>
@@ -226,10 +382,30 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Login Form */}
-              <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Login / Register Form */}
+              <form onSubmit={handleSubmit} className="space-y-3.5">
+                {/* Full Name Input (Register mode only) */}
+                {mode === 'register' && (
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-stone-700">
+                      Enterprise Full Name
+                    </label>
+                    <div className="relative flex items-center">
+                      <UserIcon className="absolute left-3.5 h-4 w-4 text-stone-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Alex Rivers"
+                        required={mode === 'register'}
+                        className="w-full bg-stone-50/70 border border-stone-200 rounded-2xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-orange-600 focus:ring-2 focus:ring-orange-500/20 transition-all font-medium"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Email Input */}
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <label className="block text-xs font-bold text-stone-700">
                     Enterprise Work Email
                   </label>
@@ -247,18 +423,20 @@ export default function LoginPage() {
                 </div>
 
                 {/* Password Input */}
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-bold text-stone-700">
                       Security Password
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => setForgotModalOpen(true)}
-                      className="text-[11px] font-semibold text-orange-600 hover:text-orange-700 transition-colors"
-                    >
-                      Forgot password?
-                    </button>
+                    {mode === 'signin' && (
+                      <button
+                        type="button"
+                        onClick={() => setForgotModalOpen(true)}
+                        className="text-[11px] font-semibold text-orange-600 hover:text-orange-700 transition-colors"
+                      >
+                        Forgot password?
+                      </button>
+                    )}
                   </div>
                   <div className="relative flex items-center">
                     <Lock className="absolute left-3.5 h-4 w-4 text-stone-400 pointer-events-none" />
@@ -268,6 +446,7 @@ export default function LoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••"
                       required
+                      minLength={6}
                       className="w-full bg-stone-50/70 border border-stone-200 rounded-2xl pl-10 pr-11 py-2.5 text-xs sm:text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white focus:border-orange-600 focus:ring-2 focus:ring-orange-500/20 transition-all font-medium"
                     />
                     <button
@@ -282,7 +461,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Remember Me Checkbox */}
-                <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center justify-between pt-0.5">
                   <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-stone-600">
                     <input
                       type="checkbox"
@@ -301,10 +480,15 @@ export default function LoginPage() {
                   className="w-full py-3 px-5 rounded-2xl bg-[#18181b] hover:bg-black text-white text-xs sm:text-sm font-bold shadow-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
                 >
                   {loading ? (
-                    <span>Authenticating session...</span>
+                    <span className="flex items-center gap-2">
+                      <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Authenticating session...
+                    </span>
                   ) : (
                     <>
-                      <span>Sign in to SubFlow Console</span>
+                      <span>
+                        {mode === 'signin' ? 'Sign in to SubFlow Console' : 'Create Account & Sign In'}
+                      </span>
                       <ArrowRight className="h-4 w-4" />
                     </>
                   )}
@@ -321,7 +505,7 @@ export default function LoginPage() {
                 </span>
               </div>
 
-              {/* SSO Buttons */}
+              {/* SSO Buttons: Google Workspace & Apple ID */}
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -349,7 +533,7 @@ export default function LoginPage() {
                       d="M12 23c3.24 0 5.95-1.08 7.93-2.91l-3.76-2.92c-1.08.72-2.45 1.16-4.17 1.16-3.02 0-5.56-2.27-6.47-5.34L1.76 15.91C3.6 19.73 7.46 23 12 23z"
                     />
                   </svg>
-                  <span>Google</span>
+                  <span>Google Workspace</span>
                 </button>
 
                 <button
@@ -357,7 +541,7 @@ export default function LoginPage() {
                   onClick={handleAppleSignIn}
                   disabled={loading}
                   className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl bg-white hover:bg-stone-50 border border-stone-200 text-xs font-semibold text-stone-700 shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50"
-                  title="Sign in with Apple"
+                  title="Sign in with Apple ID"
                 >
                   {/* Apple Vector Icon */}
                   <svg className="h-4 w-4 shrink-0 text-stone-900 fill-current" viewBox="0 0 24 24">
@@ -376,254 +560,72 @@ export default function LoginPage() {
               </div>
             </div>
           </div>
-
-          {/* Right Column: Unique Custom Vector Art & Telemetry Showcase Pane */}
-          <div className="lg:col-span-6 hidden lg:flex flex-col justify-center items-center relative">
-            {/* Ambient Vector Card Container */}
-            <div className="w-full bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border border-orange-200/80 rounded-3xl p-8 sm:p-10 relative overflow-hidden backdrop-blur-xs shadow-[0_10px_35px_-10px_rgba(234,88,12,0.1)]">
-              {/* Corner Watermark Logo */}
-              <div className="absolute top-4 right-4 text-orange-600/10 font-black text-6xl select-none pointer-events-none">
-                SubFlow
-              </div>
-
-              {/* Central Vector Composition */}
-              <div className="relative py-4 flex flex-col items-center">
-                {/* 1. Main Vector Illustration SVG */}
-                <svg
-                  className="w-72 h-72 drop-shadow-md"
-                  viewBox="0 0 320 320"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <defs>
-                    <linearGradient id="orbitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#f97316" stopOpacity="0.8" />
-                      <stop offset="100%" stopColor="#ea580c" stopOpacity="0.2" />
-                    </linearGradient>
-
-                    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#fb923c" />
-                      <stop offset="50%" stopColor="#f97316" />
-                      <stop offset="100%" stopColor="#ea580c" />
-                    </linearGradient>
-
-                    <linearGradient id="curveWave" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#f97316" stopOpacity="0.2" />
-                      <stop offset="50%" stopColor="#ea580c" stopOpacity="0.9" />
-                      <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.3" />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Outer Orbital Rings */}
-                  <circle cx="160" cy="160" r="140" stroke="url(#orbitGrad)" strokeWidth="1.5" strokeDasharray="6 8" />
-                  <circle cx="160" cy="160" r="110" stroke="rgba(234, 88, 12, 0.2)" strokeWidth="1.5" />
-                  <circle cx="160" cy="160" r="80" stroke="rgba(234, 88, 12, 0.3)" strokeWidth="1" strokeDasharray="3 5" />
-
-                  {/* Orbital Flow Nodes */}
-                  <circle cx="300" cy="160" r="5" fill="#f97316" className="animate-pulse" />
-                  <circle cx="160" cy="20" r="4" fill="#f59e0b" />
-                  <circle cx="20" cy="160" r="4.5" fill="#ea580c" />
-                  <circle cx="160" cy="300" r="3.5" fill="#fb923c" />
-
-                  {/* Harmonic Wave Splines */}
-                  <path
-                    d="M 30,190 C 90,130 130,230 190,140 C 230,80 270,180 300,160"
-                    stroke="url(#curveWave)"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                    fill="none"
-                  />
-                  <path
-                    d="M 20,150 C 70,220 140,90 200,180 C 240,240 280,120 310,130"
-                    stroke="#f59e0b"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeDasharray="4 6"
-                    opacity="0.6"
-                    fill="none"
-                  />
-
-                  {/* Center Vector Scallop Verified Emblem */}
-                  <g transform="translate(110, 110)">
-                    {/* Outer Scallop Verified Shape */}
-                    <path
-                      d="M 50,0 C 58,0 63,7 70,8 C 77,10 84,7 90,11 C 96,16 97,24 100,30 C 104,36 111,40 113,47 C 114,54 110,61 110,68 C 110,75 114,82 113,89 C 111,96 104,100 100,106 C 97,112 96,120 90,125 C 84,129 77,126 70,128 C 63,129 58,136 50,136 C 42,136 37,129 30,128 C 23,126 16,129 10,125 C 4,120 3,112 0,106 C -4,100 -11,96 -13,89 C -14,82 -10,75 -10,68 C -10,61 -14,54 -13,47 C -11,40 -4,36 0,30 C 3,24 4,16 10,11 C 16,7 23,10 30,8 C 37,7 42,0 50,0 Z"
-                      transform="translate(0, -18) scale(0.75)"
-                      fill="url(#badgeGrad)"
-                      filter="drop-shadow(0px 8px 16px rgba(234, 88, 12, 0.45))"
-                    />
-
-                    {/* Crisp Center White Checkmark Vector */}
-                    <path
-                      d="M 23,38 L 33,48 L 52,26"
-                      stroke="#ffffff"
-                      strokeWidth="5.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      fill="none"
-                    />
-                  </g>
-                </svg>
-
-                {/* Floating Telemetry Micro-Cards (Layered onto vector scene) */}
-                <div className="w-full space-y-3 mt-4">
-                  {/* Floating Card 1: Revenue & Barcode Preview */}
-                  <div className="bg-white/95 rounded-2xl p-4 border border-stone-200/90 shadow-md backdrop-blur-sm flex items-center justify-between transition-all hover:scale-[1.02]">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600">
-                        <TrendingUp className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-[11px] font-bold text-stone-500">Live Recurring MRR</p>
-                        <p className="text-base font-black text-stone-900">$42,860.00</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-end gap-1 h-8 px-2 py-1 bg-stone-50 rounded-xl border border-stone-200">
-                      {[40, 75, 55, 90, 65, 85, 100].map((h, i) => (
-                        <div
-                          key={i}
-                          className="w-1.5 rounded-full bg-gradient-to-t from-orange-600 to-orange-400"
-                          style={{ height: `${h}%` }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Floating Card 2: Speedometer & SLA Guarantee */}
-                  <div className="bg-white/95 rounded-2xl p-4 border border-stone-200/90 shadow-md backdrop-blur-sm flex items-center justify-between transition-all hover:scale-[1.02]">
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                      <div>
-                        <p className="text-xs font-bold text-stone-900">85% Monthly Revenue Goal Achieved</p>
-                        <p className="text-[11px] text-stone-500">$85,000 of $100,000 monthly quota hit</p>
-                      </div>
-                    </div>
-                    <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                      +18.4%
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Testimonial / Trust Seal */}
-              <div className="pt-6 border-t border-orange-200/60 mt-4 flex items-center justify-between text-xs text-stone-600">
-                <div className="flex items-center gap-2">
-                  <div className="flex -space-x-1.5">
-                    {['#ea580c', '#f59e0b', '#18181b', '#059669'].map((c, i) => (
-                      <div
-                        key={i}
-                        className="h-6 w-6 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-white"
-                        style={{ backgroundColor: c }}
-                      >
-                        {['A', 'J', 'S', 'M'][i]}
-                      </div>
-                    ))}
-                  </div>
-                  <span className="text-[11px] font-bold text-stone-700">200+ Enterprise Teams</span>
-                </div>
-
-                <div className="flex items-center gap-1 text-amber-500">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Sparkles key={i} className="h-3 w-3 fill-amber-400 text-amber-500" />
-                  ))}
-                  <span className="text-[11px] font-extrabold text-stone-800 ml-1">4.9 / 5.0</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </main>
 
-      {/* Footer Links */}
-      <footer className="relative z-10 px-6 sm:px-12 py-5 max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-500 border-t border-stone-200/70">
-        <p className="font-medium">
-          © {new Date().getFullYear()} SubFlow Technologies Inc. All rights reserved.
-        </p>
-
-        <div className="flex items-center gap-6 font-semibold">
-          <Link href="/dashboard" className="hover:text-stone-900 transition-colors">
-            Terms of Service
-          </Link>
-          <Link href="/dashboard" className="hover:text-stone-900 transition-colors">
-            Privacy Policy
-          </Link>
-          <Link href="/portal" className="hover:text-stone-900 transition-colors">
-            Customer Portal
-          </Link>
-          <Link href="/dashboard" className="hover:text-stone-900 transition-colors">
-            System Status
-          </Link>
-        </div>
-      </footer>
-
-      {/* Forgot Password Modal */}
+      {/* Forgot Password Recovery Modal */}
       {forgotModalOpen && (
-        <div className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl border border-[#e5e2da] max-w-md w-full p-6 sm:p-7 space-y-4 animate-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600">
-                  <Mail className="h-4 w-4" />
-                </div>
-                <h3 className="text-base font-bold text-stone-900">Reset Access Credentials</h3>
-              </div>
-              <button
-                onClick={() => setForgotModalOpen(false)}
-                className="h-8 w-8 rounded-full hover:bg-stone-100 flex items-center justify-center text-stone-400 hover:text-stone-700"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            onClick={() => setForgotModalOpen(false)}
+            className="fixed inset-0 bg-stone-900/40 backdrop-blur-xs animate-in fade-in"
+          />
+          <div className="relative bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border border-stone-200 z-10 animate-in zoom-in-95 duration-150">
+            <button
+              onClick={() => setForgotModalOpen(false)}
+              className="absolute right-4 top-4 p-1.5 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100"
+            >
+              <X className="h-4 w-4" />
+            </button>
 
-            {forgotSuccess ? (
-              <div className="py-6 text-center space-y-2">
-                <div className="h-12 w-12 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="h-6 w-6" />
-                </div>
-                <p className="text-sm font-bold text-stone-900">Recovery Instructions Dispatched</p>
-                <p className="text-xs text-stone-500">
-                  Check your inbox for a secure token to reset your authentication session.
+            <div className="space-y-4">
+              <div className="h-10 w-10 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center">
+                <Lock className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-stone-900">Reset Security Password</h3>
+                <p className="text-xs text-stone-500 mt-1">
+                  Enter your verified work email address to receive an instant recovery link.
                 </p>
               </div>
-            ) : (
-              <form onSubmit={handleForgotSubmit} className="space-y-4">
-                <p className="text-xs text-stone-500">
-                  Enter your registered enterprise email address. We will send you a one-time verification link.
-                </p>
 
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-stone-700">Account Email</label>
+              {forgotSuccess ? (
+                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>Recovery link sent! Check your inbox.</span>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotSubmit} className="space-y-3">
                   <input
                     type="email"
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
                     placeholder="name@company.com"
                     required
-                    className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2 text-xs text-stone-900 focus:outline-none focus:bg-white focus:border-orange-600 focus:ring-1 focus:ring-orange-600"
+                    className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2 text-xs text-stone-900 focus:outline-none focus:border-orange-600 focus:bg-white"
                   />
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setForgotModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold text-stone-600 hover:bg-stone-100"
-                  >
-                    Cancel
-                  </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#18181b] hover:bg-black shadow-sm"
+                    className="w-full py-2.5 rounded-xl bg-stone-900 hover:bg-black text-white text-xs font-bold shadow-xs transition-colors"
                   >
-                    Send Recovery Email
+                    Send Recovery Link
                   </button>
-                </div>
-              </form>
-            )}
+                </form>
+              )}
+            </div>
           </div>
         </div>
       )}
+
+      {/* Footer */}
+      <footer className="relative z-10 w-full max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between text-xs text-stone-500 border-t border-stone-200/60 font-medium">
+        <p>© 2026 SubFlow Inc. High-throughput recurring billing platform.</p>
+        <div className="flex items-center gap-4 mt-2 sm:mt-0">
+          <Link href="/login" className="hover:text-stone-900">Privacy Policy</Link>
+          <Link href="/login" className="hover:text-stone-900">Terms of Service</Link>
+          <Link href="/login" className="hover:text-stone-900">Security & Compliance</Link>
+        </div>
+      </footer>
     </div>
   );
 }
