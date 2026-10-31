@@ -101,24 +101,24 @@ export function RecentSalesCard() {
     switch (status) {
       case 'Paid':
         return (
-          <div className="relative inline-flex items-center justify-center px-4 py-1 rounded-full border border-emerald-400/70 bg-emerald-50/80 text-emerald-700 text-xs font-bold">
-            <span className="absolute -top-0.5 inset-x-2.5 h-0.5 bg-emerald-500 rounded-full" />
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold text-emerald-800 bg-emerald-50/90 border border-emerald-400 shadow-2xs transition-all">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
             <span>Paid</span>
-          </div>
+          </span>
         );
       case 'Pending':
         return (
-          <div className="relative inline-flex items-center justify-center px-4 py-1 rounded-full border border-amber-400/70 bg-amber-50/80 text-amber-700 text-xs font-bold">
-            <span className="absolute -top-0.5 inset-x-2.5 h-0.5 bg-amber-500 rounded-full" />
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold text-amber-800 bg-amber-50/90 border border-amber-400 shadow-2xs transition-all">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0 animate-pulse" />
             <span>Pending</span>
-          </div>
+          </span>
         );
       case 'Overdue':
         return (
-          <div className="relative inline-flex items-center justify-center px-4 py-1 rounded-full border border-rose-400/70 bg-rose-50/80 text-rose-700 text-xs font-bold">
-            <span className="absolute -top-0.5 inset-x-2.5 h-0.5 bg-rose-500 rounded-full" />
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold text-rose-800 bg-rose-50/90 border border-rose-400 shadow-2xs transition-all">
+            <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" />
             <span>Overdue</span>
-          </div>
+          </span>
         );
     }
   };
